@@ -190,6 +190,11 @@ class ControlCenter(Gtk.Window):
         self._place()
         self._shown_at = time.monotonic()
         self.show_all()
+        # xfwm4 odak-çalma koruması yeni pencereyi öndeki pencerenin ALTINA koyabiliyor ve
+        # "üstte" bayrağı haritalamada düşebiliyor → gösterdikten sonra yeniden uygula + öne al
+        self.set_keep_above(True)
+        if self.get_window() is not None:
+            self.get_window().raise_()
         self.present()
         GLib.timeout_add(60, lambda: (self.get_window() and self.get_window().focus(Gdk.CURRENT_TIME), False)[1])
         threading.Thread(target=self._refresh, daemon=True).start()

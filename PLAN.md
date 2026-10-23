@@ -70,7 +70,7 @@ macbook/
 11. [x] `controlcenter.py`, `spotlight.py` (GTK, bellek çiziminde doğrulandı)
 12. [x] `session.py` + `ctl.py` + `bin/liquid` + autostart + `install.sh` / `uninstall.sh`
     (her değiştirilen xfconf özelliğinin eski değeri backup/values.tsv'de; uninstall sadece onları döndürür)
-13. [ ] Tam ekran görüntüsü al, PNG ile yan yana karşılaştır, farkları listele ve kapat
+13. [x] Tam ekran görüntüsü al, PNG ile yan yana karşılaştır, farkları listele ve kapat
 14. [ ] Kullanıcıya göster
 
 ## 5. Öğrenilen tuzaklar (önceki denemelerden — TEKRARLAMA)
@@ -134,4 +134,16 @@ macbook/
 - widgets.py: takvim/saat/fotoğraf önizlemede hedefe yakın. Fotoğraf: NOAA kamu malı (assets/widgets).
 - launcher.py, controlcenter.py, spotlight.py yazıldı (GTK, PySide yok); bellek çizimleri doğru.
 - session.py (bekçi + XFCE panelini SIGTERM ile kapatma), ctl.py, bin/liquid, install.sh, uninstall.sh.
-- Sırada: install.sh'yi kullanıcının terminalinde çalıştır, tam ekran görüntüsünü PNG ile karşılaştır.
+- 16:36 — install.sh kullanıcının terminalinde (c7) çalıştı: 7 bileşen ayakta, XFCE paneli kapalı.
+  Tam ekran görüntüsü PNG'ye çok yakın. Farklar: kullanıcının masaüstü klasör simgeleri (karar
+  kullanıcıda), dock takvim ikonu "Tue" → kendi canlı takvim ikonumuz ("Cum 23"), Finder noktası.
+- Sinyal testleri: CC ve Spotlight açılıyor. Uygulamalar ekranı Claude penceresinin ALTINDA kalıyordu:
+  kullanıcının Claude penceresi "her zaman üstte" ve xfwm4 fullscreen'de bizim ABOVE bayrağını
+  düşürüyordu → launcher artık DIALOG tipi + ekran boyutu (fullscreen yok); hepsine show sonrası
+  set_keep_above + raise. Doğrulandı.
+
+## 5b. Yeni tuzaklar
+- xfwm4: fullscreen() olan pencerede _NET_WM_STATE_ABOVE düşüyor; kullanıcının "her zaman üstte"
+  pencereleri öne geçer. Tam ekran katmanları için DIALOG + ekran boyutu kullan.
+- Bekçi (session.py) bir bileşeni öldürünce 5 sn içinde YENİ koduyla açar → kod değişince
+  `kill $(cat $XDG_RUNTIME_DIR/liquid/<ad>.pid)` yeterli.

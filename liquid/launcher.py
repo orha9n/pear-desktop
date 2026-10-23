@@ -48,12 +48,17 @@ class Launcher(Gtk.Window):
         self.set_skip_taskbar_hint(True)
         self.set_skip_pager_hint(True)
         self.set_keep_above(True)
+        # tam ekran (fullscreen) modunda xfwm4 "üstte" bayrağını düşürüyor; kullanıcının "her zaman
+        # üstte" pencereleri öne geçiyordu → diyalog tipi + ekran boyutunda pencere (fullscreen YOK)
+        self.set_type_hint(Gdk.WindowTypeHint.DIALOG)
         self.set_app_paintable(True)
         vis = self.get_screen().get_rgba_visual()
         if vis:
             self.set_visual(vis)
         self.mx, self.my, self.mw, self.mh = screen_geometry()
         self.set_default_size(self.mw, self.mh)
+        self.set_size_request(self.mw, self.mh)
+        self.set_resizable(False)
         self.move(self.mx, self.my)
         css = Gtk.CssProvider()
         css.load_from_data(f"""
@@ -302,8 +307,13 @@ class Launcher(Gtk.Window):
         self._filter()
         self.alpha, self.zoom = 0.0, 1.06
         self._shown_at = time.monotonic()
+        self.move(self.mx, self.my)
         self.show_all()
-        self.fullscreen()
+        # xfwm4 odak-çalma koruması yeni pencereyi öndeki pencerenin ALTINA koyabiliyor ve
+        # "üstte" bayrağı haritalamada düşebiliyor → gösterdikten sonra yeniden uygula + öne al
+        self.set_keep_above(True)
+        if self.get_window() is not None:
+            self.get_window().raise_()
         self.present()
         GLib.timeout_add(60, self._focus)
         self._animate(1.0)
@@ -321,7 +331,7 @@ class Launcher(Gtk.Window):
         return False
 
     def hide_apps(self):
-        self._animate(0.0, done=lambda: (self.unfullscreen(), self.hide()))
+        self._animate(0.0, done=self.hide)
 
     # ---------- olaylar ----------
     def on_key(self, w, e):

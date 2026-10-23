@@ -171,6 +171,11 @@ class Spotlight(Gtk.Window):
         self._resize()
         self._shown_at = time.monotonic()
         self.show_all()
+        # xfwm4 odak-çalma koruması yeni pencereyi öndeki pencerenin ALTINA koyabiliyor ve
+        # "üstte" bayrağı haritalamada düşebiliyor → gösterdikten sonra yeniden uygula + öne al
+        self.set_keep_above(True)
+        if self.get_window() is not None:
+            self.get_window().raise_()
         self.present()
         GLib.timeout_add(60, self._focus)
 

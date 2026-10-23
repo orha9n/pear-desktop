@@ -33,6 +33,8 @@ CONF = config_path("dock.ini")
 ASSETS = os.path.join(daemon.ROOT, "assets")
 TRASH = os.path.expanduser("~/.local/share/Trash/files")
 FPS = 16
+CALENDAR_APPS = ("org.gnome.Calendar.desktop", "gnome-calendar.desktop", "thunderbird-calendar.desktop")
+ALWAYS_RUNNING = ("thunar.desktop",)          # macOS'ta Finder hep çalışır → hep nokta
 
 
 def sh_bg(cmd):
@@ -204,7 +206,36 @@ class Dock(Gtk.Window):
         self.queue_draw()
         return False
 
+    def _calendar_icon(self, size):
+        """macOS takvim ikonu: beyaz kare, üstte kırmızı kısa gün adı, ortada büyük gün numarası."""
+        surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
+        cr = cairo.Context(surf)
+        m = size * 0.08
+        design.rrect(cr, m, m, size - 2 * m, size - 2 * m, size * 0.22)
+        cr.set_source_rgba(1, 1, 1, 1)
+        cr.fill_preserve()
+        cr.set_source_rgba(0, 0, 0, 0.10)
+        cr.set_line_width(max(1, size / 96))
+        cr.stroke()
+        now = GLib.DateTime.new_now_local()
+        for txt, y, fsz, col, weight in ((now.format("%a"), 0.17, 0.15, (*design.RED, 1), "Semi-Bold"),
+                                         (str(now.get_day_of_month()), 0.30, 0.42, (0.12, 0.12, 0.13, 1), "Light")):
+            lay = PangoCairo.create_layout(cr)
+            lay.set_font_description(Pango.FontDescription(f"{design.FONT} {weight} {int(size * fsz * 0.75)}"))
+            lay.set_text(txt, -1)
+            tw, th = lay.get_pixel_size()
+            cr.move_to((size - tw) / 2, size * y)
+            cr.set_source_rgba(*col)
+            PangoCairo.show_layout(cr, lay)
+        return surf
+
     def _icon(self, it):
+        if it.kind == "app" and it.key in CALENDAR_APPS:
+            day = GLib.DateTime.new_now_local().get_day_of_month()
+            if getattr(it, "_cal_day", None) != day or it.surface is None:
+                it._cal_day = day
+                it.surface = self._calendar_icon(self.M * self.get_scale_factor())
+            return it.surface
         if it.surface is not None:
             return it.surface or None
         size = self.M * self.get_scale_factor()
@@ -344,7 +375,7 @@ class Dock(Gtk.Window):
                     design.rrect(cr, it.x + size * 0.06, iy + size * 0.06, size * 0.88, size * 0.88, size * 0.22)
                     cr.set_source_rgba(0, 0, 0, 0.30)
                     cr.fill()
-            if it.running:
+            if it.running or it.key in ALWAYS_RUNNING:
                 design.circle(cr, it.x + size / 2, by + bh - 3.2, 2.1)
                 cr.set_source_rgba(0, 0, 0, 0.55)
                 cr.fill()
