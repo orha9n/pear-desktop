@@ -230,7 +230,8 @@ macbook/
 - 21:5x — Gerçek cam (25): picom 10 (glx, dual_kawase). `liquid/compositor.py` + `liquid/picom.conf`; seçim
   ~/.config/liquid/compositor.json (önceki xfwm4 use_compositing değeriyle), bekçi picom'u ayakta tutar,
   2 dk'da 4 düşüşte xfwm4'e döner. Blur yalnız WM_WINDOW_ROLE=liquid-glass pencerelerde; bulanıklık/gölge
-  pencerenin X şeklini izler (compositor.shape). Dock henüz duvar kâğıdı kopyası.
+  pencerenin X şeklini izler (compositor.shape). Dock: altında ayrı DockGlass penceresi (tam genişlik
+  şerit, şekli cam; _NET_RESTACK ile hep dock'un ALTINDA), ton/kenar dock penceresinde.
 ## 5g. Yeni tuzaklar
 - picom koşulunda olmayan özellik karşılaştırması yanlış döner: `role != 'x'` rolsüz pencerelerde de false
   → "hariç tut" için `! role = 'x'` yaz.

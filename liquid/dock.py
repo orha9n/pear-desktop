@@ -29,7 +29,7 @@ from gi.repository import Gtk, Gdk, GdkPixbuf, Gio, GLib, Wnck, Pango, PangoCair
 
 from .core import design, wallpaper, daemon, apps, config_path, screen_geometry, set_strut, restart_on_monitor_change  # noqa: E402
 from .core.i18n import t  # noqa: E402
-from . import fullscreen  # noqa: E402
+from . import fullscreen, compositor  # noqa: E402
 
 CONF = config_path("dock.ini")
 ASSETS = os.path.join(daemon.ROOT, "assets")
@@ -82,6 +82,59 @@ class Item:
         """Hâlâ açık pencereler. Wnck.Window'u öznitelikte tutmak çökertir: pencere kapanınca libwnck
         nesneyi yok eder, Python'un sonradan bıraktığı unref → segfault (g_hash_table_remove)."""
         return [w for w in map(Wnck.Window.get, self.windows) if w is not None]
+
+
+class DockGlass(Gtk.Window):
+    """picom açıkken dock camının ALTINDA duran ayrı, boş pencere: X şekli yalnız cam yüzey olduğundan
+    picom tam o alanın arkasını bulanıklaştırır. Dock penceresinin kendisi bulanıklaştırılamaz — büyüyen
+    ikonlar ve ad baloncukları camın dışına taşar, o bölgeler de bulanıklaşırdı. Ton/kenar ışığı dock
+    penceresinde çizilir; bu pencere tıklama almaz, yalnızca bulanıklığı taşır."""
+
+    def __init__(self, dock):
+        super().__init__(type=Gtk.WindowType.TOPLEVEL)
+        self.dock = dock
+        self.set_title("Liquid Dock Glass")
+        compositor.mark(self)
+        self.set_decorated(False)
+        self.set_type_hint(Gdk.WindowTypeHint.DOCK)
+        self.set_skip_taskbar_hint(True)
+        self.set_skip_pager_hint(True)
+        self.set_keep_above(True)
+        self.set_accept_focus(False)
+        self.stick()
+        self.set_app_paintable(True)
+        vis = self.get_screen().get_rgba_visual()
+        if vis:
+            self.set_visual(vis)
+        self.connect("draw", self._clear)
+        self.connect("map-event", lambda *_: (self.restack(), self.dock._sync_glass(), False)[2])
+        self.set_size_request(dock.mw, dock.BG_H)
+        self.move(dock.mx, dock.my + dock.mh - design.DOCK_BOTTOM - dock.BG_H)      # dock camıyla aynı satır
+
+    @staticmethod
+    def _clear(w, cr):
+        cr.set_operator(cairo.OPERATOR_SOURCE)
+        cr.set_source_rgba(0, 0, 0, 0)
+        cr.paint()
+        return True
+
+    def restack(self):
+        """Hep dock penceresinin hemen ALTINDA (üstünde olsa ikonları da bulanıklaştırırdı)."""
+        gw, dw = self.get_window(), self.dock.get_window()
+        if gw is not None and dw is not None:
+            gw.restack(dw, False)
+
+    def sync(self, x, w, r, hidden):
+        gw = self.get_window()
+        if gw is None:
+            return
+        key = (int(round(x)), int(round(w)), int(r))
+        if getattr(self, "_key", None) != key:
+            self._key = key
+            gw.shape_combine_region(compositor._rounded_region(key[0], 0, key[1], self.dock.BG_H, key[2]), 0, 0)
+        if getattr(self, "_hidden", None) != hidden:
+            self._hidden = hidden
+            fullscreen.set_hidden(self, hidden, cairo.Region())        # tıklamalar hep dock'a
 
 
 class Dock(Gtk.Window):
@@ -157,6 +210,7 @@ class Dock(Gtk.Window):
         self._fs_poll_id = None
         self._edge_since = None
         self.fs = fullscreen.Watcher(self.wnck, self._fs_changed)
+        self.glass = None               # picom açıkken DockGlass (gerçek bulanıklık)
 
     # ---------- düzen ----------
     def _strut(self):
@@ -316,6 +370,7 @@ class Dock(Gtk.Window):
     def _fs_hide(self, hidden):
         self.fs_hidden = hidden
         fullscreen.set_hidden(self, hidden)
+        self._sync_glass()
         if not hidden:
             self._input()
 
@@ -332,6 +387,8 @@ class Dock(Gtk.Window):
                     self._fs_hide(False)
                     if self.get_window() is not None:
                         self.get_window().raise_()
+                        if self.glass is not None:
+                            self.glass.restack()
             else:
                 self._edge_since = None
         elif self.press is None and (not inside or y < bottom - self.WIN_H):
@@ -352,7 +409,28 @@ class Dock(Gtk.Window):
         self.input_shape_combine_region(cairo.Region(r))
 
     # ---------- arka plan ----------
+    def _real_glass(self):
+        """picom açılınca/kapanınca cam penceresini kur ya da kaldır; gerçek cam varsa True."""
+        real = compositor.active()
+        if real and self.glass is None:
+            self.glass = DockGlass(self)
+            self.glass.show_all()
+            self.backdrop, self._wp_key = None, None
+            self.queue_draw()
+        elif not real and self.glass is not None:
+            self.glass.destroy()
+            self.glass = None
+            self._wp_key = None
+            self.queue_draw()
+        return real
+
+    def _sync_glass(self):
+        if self.glass is not None and hasattr(self, "bg_x"):
+            self.glass.sync(self.bg_x, self.bg_w, design.DOCK_RADIUS, self.fs_hidden)
+
     def _check_wallpaper(self):
+        if self._real_glass():
+            return
         p, st, mt = wallpaper.current()
         key = (p, st, mt)
         if key != self._wp_key:
@@ -391,12 +469,24 @@ class Dock(Gtk.Window):
         cr.set_source_rgba(0, 0, 0, 0)
         cr.paint()
         cr.set_operator(cairo.OPERATOR_OVER)
-        if self._wp_key is None:
+        if self._wp_key is None and self.glass is None:
             self._check_wallpaper()
         self._layout()
+        real = self.glass is not None
+        if real:
+            # bulanıklık alttaki DockGlass'ta; gölge yalnız camın DIŞINA (içe düşerse camı karartırdı)
+            self._sync_glass()
+            cr.save()
+            cr.rectangle(0, 0, self.mw, self.WIN_H)
+            design.rrect(cr, self.bg_x, self.bg_y, self.bg_w, self.BG_H, design.DOCK_RADIUS)
+            cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+            cr.clip()
+            design.soft_shadow(cr, self.bg_x, self.bg_y, self.bg_w, self.BG_H, design.DOCK_RADIUS,
+                               strength=0.18 if not design.dark() else 0.35, spread=12, dy=3)
+            cr.restore()
         design.liquid_glass(cr, self.bg_x, self.bg_y, self.bg_w, self.BG_H, design.DOCK_RADIUS,
-                            backdrop=self.backdrop, backdrop_xy=(0, 0),
-                            tint=design.glass_tint(0.20), dark=design.dark())
+                            backdrop=None if real else self.backdrop, backdrop_xy=(0, 0),
+                            tint=design.glass_tint(0.20), dark=design.dark(), shadow=not real)
         now = time.monotonic()
         anim = False
         sf = self.get_scale_factor()
