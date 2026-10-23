@@ -66,9 +66,10 @@ macbook/
 7. [ ] `bar.py` — saydam menü çubuğu (PNG ile ölçerek karşılaştır)
 8. [x] `dock.py` — Liquid Glass dock (önizlemede MacTahoe ikonlarıyla doğrulandı)
 9. [x] `widgets.py` — takvim, analog saat, fotoğraf (önizlemede doğrulandı)
-10. [ ] `apps.py` — Uygulamalar ızgarası
-11. [ ] `controlcenter.py`, `spotlight.py`
-12. [ ] `session.py` + autostart + `install.sh` / `uninstall.sh` (orijinal ayar yedeği!)
+10. [x] `launcher.py` — Uygulamalar ızgarası (bellek çiziminde doğrulandı)
+11. [x] `controlcenter.py`, `spotlight.py` (GTK, bellek çiziminde doğrulandı)
+12. [x] `session.py` + `ctl.py` + `bin/liquid` + autostart + `install.sh` / `uninstall.sh`
+    (her değiştirilen xfconf özelliğinin eski değeri backup/values.tsv'de; uninstall sadece onları döndürür)
 13. [ ] Tam ekran görüntüsü al, PNG ile yan yana karşılaştır, farkları listele ve kapat
 14. [ ] Kullanıcıya göster
 
@@ -131,3 +132,6 @@ macbook/
 - dock.py: önizleme (tools/preview.py dock) — MacTahoe ikonları, cam gövde, ayraç, İndirilenler, Çöp OK.
   Not: Takvim ikonu "Tue" İngilizce (ikonun kendisi), Hesap Makinesi ikonu biraz büyük görünüyor.
 - widgets.py: takvim/saat/fotoğraf önizlemede hedefe yakın. Fotoğraf: NOAA kamu malı (assets/widgets).
+- launcher.py, controlcenter.py, spotlight.py yazıldı (GTK, PySide yok); bellek çizimleri doğru.
+- session.py (bekçi + XFCE panelini SIGTERM ile kapatma), ctl.py, bin/liquid, install.sh, uninstall.sh.
+- Sırada: install.sh'yi kullanıcının terminalinde çalıştır, tam ekran görüntüsünü PNG ile karşılaştır.
