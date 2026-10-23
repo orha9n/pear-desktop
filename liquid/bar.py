@@ -12,6 +12,8 @@ Arka plan YOK: yazılar duvar kâğıdının üstünde; renk (beyaz/siyah) duvar
 """
 import os
 import re
+import signal
+import subprocess
 import sys
 import threading
 
@@ -30,7 +32,7 @@ from gi.repository import Gtk, Gdk, GLib, Gio, Wnck, Dbusmenu, GdkPixbuf  # noqa
 
 from .core import design, wallpaper, daemon, apps, screen_geometry, set_strut  # noqa: E402
 from .core.i18n import t  # noqa: E402
-from . import applemenu  # noqa: E402
+from . import applemenu, fullscreen  # noqa: E402
 from .glyphs import Glyph, battery_state, wifi_state  # noqa: E402
 
 H = design.BAR_H
@@ -183,6 +185,7 @@ class Bar(Gtk.Window):
         Gtk.StyleContext.add_provider_for_screen(
             Gdk.Screen.get_default(), self.css, Gtk.STYLE_PROVIDER_PRIORITY_USER + 10)
         self.light_text = True
+        self.solid = None               # macOS tam ekranında düz şerit: "light" | "dark"
         self._wp_key = None
         self._update_text_color(force=True)
 
@@ -219,8 +222,19 @@ class Bar(Gtk.Window):
         self.gmodel = None
         self._open = False
         self._dirty = False
+        self._reveal_id = None
+        self._popup_open = False
         self.wnck.connect("active-window-changed", lambda *_: GLib.idle_add(self.on_active))
         self.wnck.connect("active-workspace-changed", lambda *_: self._update_text_color())
+        # yeşil düğme → macOS tam ekranı (pencere çubuğun altında, çubuk düz renk); uygulamanın kendi
+        # tam ekranında çubuk gizli. İkisinde de üstte trafik ışıklı başlık şeridi açılır.
+        self.macfs = fullscreen.MacFullscreen(H, (self.mx, self.my, self.mw, self.mh),
+                                              self._strut_on, self._macfs_changed)
+        self.fs_strip = fullscreen.TitleStrip(self.mx, self.mw, self._close_xid, self._exit_fs)
+        self.fs = fullscreen.Watcher(self.wnck, self._fs_changed, on_green=self._green,
+                                     mode=lambda s: fullscreen.mode_of(s, self.macfs.state))
+        self.macfs.watcher = self.fs
+        self.wnck.connect("window-closed", lambda s, w: self.macfs.forget(w.get_xid()))
         self.on_active()
         GLib.timeout_add_seconds(3, self._poll)
         self._poll()
@@ -228,16 +242,22 @@ class Bar(Gtk.Window):
 
     # ---------- görünüm ----------
     def _update_text_color(self, force=False):
-        """Duvar kâğıdının üst şeridi parlaksa siyah, değilse beyaz yazı (macOS gibi)."""
-        p, st, mt = wallpaper.current()
-        key = (p, st, mt)
-        if key == self._wp_key and not force:
-            return
-        self._wp_key = key
-        lum = wallpaper.luminance(self.mw, self.mh, 0, 0, self.mw, H)
-        self.light_text = lum < 0.72
+        """Duvar kâğıdının üst şeridi parlaksa siyah, değilse beyaz yazı (macOS gibi).
+        macOS tam ekranında şerit düz renk: açık temada siyah, koyu temada beyaz yazı."""
+        if self.solid:
+            if not force:
+                return
+            self.light_text = self.solid == "dark"
+        else:
+            p, st, mt = wallpaper.current()
+            key = (p, st, mt)
+            if key == self._wp_key and not force:
+                return
+            self._wp_key = key
+            lum = wallpaper.luminance(self.mw, self.mh, 0, 0, self.mw, H)
+            self.light_text = lum < 0.72
         fg = "rgba(255,255,255,0.96)" if self.light_text else "rgba(0,0,0,0.86)"
-        shadow = "0 1px 2px rgba(0,0,0,0.30)" if self.light_text else "none"
+        shadow = "0 1px 2px rgba(0,0,0,0.30)" if self.light_text and not self.solid else "none"
         hov = "rgba(255,255,255,0.22)" if self.light_text else "rgba(0,0,0,0.10)"
         self.css.load_from_data(f"""
 #lbar, #lbar * {{ font-family: "SF Pro Text", "{design.FONT}", sans-serif; }}
@@ -261,9 +281,111 @@ class Bar(Gtk.Window):
             self.apple_glyph.light = self.light_text
             self.apple_glyph.queue_draw()
 
+    # ---------- tam ekran ----------
+    def _fs_changed(self, mode):
+        fullscreen.set_hidden(self, mode == "x")
+        # macOS tam ekranında şerit düz renk; menü/simge/saat yalnızca imleç çubuğa gelince görünür
+        self.get_child().set_visible(mode != "mac")
+        if mode == "mac" and self._reveal_id is None:
+            self._reveal_id = GLib.timeout_add(fullscreen.POLL_MS, self._reveal_poll)
+        elif mode != "mac" and self._reveal_id is not None:
+            GLib.source_remove(self._reveal_id)
+            self._reveal_id = None
+        solid = None
+        if mode == "mac":
+            theme = subprocess.run(["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName"],
+                                   capture_output=True, text=True).stdout
+            solid = "dark" if "Dark" in theme else "light"
+        if solid != self.solid:
+            self.solid = solid
+            self._wp_key = None
+            self._update_text_color(force=True)
+            self.queue_draw()
+        if mode == "x":                                   # en üst kenarda kısa bekleme
+            self.fs_strip.start(self.my, self.my + 2)
+        elif mode == "mac":                               # çubuğun üzerinde bekleyince altında açılır
+            self.fs_strip.start(self.my + H, self.my + H, delay=0.6)
+        else:
+            self.fs_strip.stop()
+
+    def _reveal_poll(self):
+        """macOS tam ekranı: imleç çubuktayken içerik görünür; açık menü varken ya da imleç alttaki
+        başlık şeridindeyken açık kalır, aşağı inince yine düz renk."""
+        x, y = fullscreen.pointer()
+        inside = self.mx <= x < self.mx + self.mw
+        child = self.get_child()
+        if inside and y < self.my + H:
+            if not child.get_visible():
+                child.show()
+        elif child.get_visible() and not self._menu_up() and \
+                (not inside or y > self.my + H + fullscreen.TitleStrip.H + 12):
+            child.hide()
+        return True
+
+    def _menu_up(self):
+        """Çubuktan açılmış bir menü (uygulama, Elma, pil/Wi-Fi) hâlâ açık mı?"""
+        return self._open or self.menubar.get_selected_item() is not None or self._popup_open
+
+    def _green(self, xid, max_now, green):
+        w = Wnck.Window.get(xid)
+        if w is None:
+            return False
+        if self.macfs.active(xid):
+            if not green:                                 # klavyeyle büyütüldü → artık tam ekran değil
+                self.macfs.forget(xid)
+                return False
+            self.fs.mute(xid, 1.5)                        # ☐/yeşil: değişikliği geri al, tam ekrandan çık
+            if max_now:
+                w.unmaximize()
+            self.macfs.exit(xid)
+        elif green:
+            # xfwm4'ün büyütmesini geri al; büyütülmüşken tıklandıysa çıkınca yine büyütülmüş olsun
+            self.macfs.enter(xid, was_max=not max_now)
+        return False
+
+    def _macfs_changed(self):
+        if hasattr(self, "fs"):
+            self.fs.check()
+        if self.cur and self.cur[0]:
+            if self._open:
+                self._dirty = True
+            else:
+                self.appitem.set_submenu(self._app_menu(apps.name(self.cur[1], self._window()), self.cur[1]))
+
+    def _toggle_fs(self):
+        w = self.wnck.get_active_window()
+        if w is None or self._is_ours(w):
+            return
+        if w.is_fullscreen():
+            w.set_fullscreen(False)
+        else:
+            self.macfs.toggle(w.get_xid())
+
+    def _exit_fs(self, xid):
+        if self.macfs.active(xid):
+            self.macfs.exit(xid)
+        else:
+            w = Wnck.Window.get(xid)
+            if w is not None:
+                w.set_fullscreen(False)
+
+    def _close_xid(self, xid, ts):
+        w = Wnck.Window.get(xid)
+        if w is not None:
+            w.close(ts)
+
+    def _strut_on(self, on):
+        if on:
+            self._strut()
+        elif self.get_window() is not None:
+            set_strut(self.get_window(), top=0)
+
     def _draw_bg(self, w, cr):
         cr.set_operator(cairo.OPERATOR_SOURCE)
-        cr.set_source_rgba(0, 0, 0, 0)          # tamamen saydam (macOS 26/27)
+        if self.solid:                          # macOS tam ekranı: düz açık / koyu şerit
+            cr.set_source_rgba(*((0.11, 0.11, 0.12, 1) if self.solid == "dark" else (0.95, 0.95, 0.96, 1)))
+        else:
+            cr.set_source_rgba(0, 0, 0, 0)      # tamamen saydam (macOS 26/27)
         cr.paint()
         cr.set_operator(cairo.OPERATOR_OVER)
         return False
@@ -306,6 +428,8 @@ class Bar(Gtk.Window):
         return g
 
     def _popup(self, menu, btn):
+        self._popup_open = True
+        menu.connect("hide", lambda *_: setattr(self, "_popup_open", False))
         menu.show_all()
         menu.attach_to_widget(btn, None)
         # olay ver: olaysız popup grab alamaz ve görünmez
@@ -522,6 +646,10 @@ class Bar(Gtk.Window):
                                                  if w.get_window_type() == Wnck.WindowType.NORMAL
                                                  and w not in own()], "⌥⌘H"))
         m.append(sep())
+        xid = self.cur[0] if self.cur else None
+        m.append(item(t("exit_fullscreen") if xid and self.macfs.active(xid) else t("enter_fullscreen"),
+                      lambda: xid and self.macfs.toggle(xid), "⌃⌘F", sensitive=bool(xid)))
+        m.append(sep())
         m.append(item(t("quit_app").format(nm), lambda: [w.close(ts()) for w in own()], "⌘Q"))
         m.show_all()
         m.connect("show", lambda *_: setattr(self, "_open", True))
@@ -591,6 +719,7 @@ def main():
     if not daemon.claim("bar"):
         return
     b = Bar()
+    daemon.on_signal(signal.SIGUSR2, b._toggle_fs)      # ⌃⌘F (liquid fullscreen)
     b.connect("destroy", Gtk.main_quit)
     b.show_all()
     Gtk.main()

@@ -174,3 +174,41 @@ macbook/
 - `set_app_paintable(True)` pencerede GTK CSS arka planı çizilmez → arka planı draw'da kendin çiz.
 - Bileşen kodunu test ederken pencereyi kullanıcının ekranında açma/tıklama: kullanıcı aynı anda
   masaüstünü kullanıyor olabilir.
+- 20:5x — macOS tam ekranı (`liquid/fullscreen.py`): xfwm4 yeşil düğmesi (ve Claude gibi kendi
+  düğmesini çizen kenarlıksız uygulamaların ☐ düğmesi) büyütme anında imleç trafik ışığı
+  bölgesindeyse tam ekrana çevrilir; klavye/çift tık büyütmesi "Doldur" olarak kalır. Tam ekranda
+  bar+dock saydam/tıklanamaz; üst kenarda trafik ışıklı başlık şeridi (yeşil = çık), alt kenarda dock.
+  ⌃⌘F (`<Primary><Super>f` → `liquid fullscreen`, yedekli). Test: 4 senaryo geçti, çökme yok.
+- Claude uygulaması kenarlıksız (`_MOTIF_WM_HINTS` dekorasyon=0); ✕ – ☐ düğmelerini uygulama çiziyor →
+  tema yeşile boyayamaz (asar yaması güncellemede silinir; zorla xfwm çerçevesi = çift başlık).
+
+## 5d. Yeni tuzaklar
+- xfwm4 tam ekran pencereyi DOCK tipindeki çubuk/dock'un ALTINDA bırakıyor → tam ekranda kendimiz
+  gizliyoruz. Unmap ETME (strut kalkar, büyütülmüş pencereler yeniden boyutlanır): opacity 0 + boş input shape.
+- Wnck'de büyütme durumu ile geometry-changed sırası belirsiz → yeşil tık kontrolünde ~120 ms
+  önceki geometri kullanılır.
+- 21:0x — Kullanıcı düzeltmesi: macOS'ta yeşil düğme pencereyi menü çubuğunun ÜSTÜNE büyütmez; menü
+  şeridi düz açık/koyu renge döner, pencere altından ekranın en altına (dock alanı dahil) uzar.
+  → Yeşil düğme artık X tam ekranı DEĞİL, "macOS tam ekranı": istemci (0, 30, 1920, 1050), xfwm4 başlık
+  çubuğu opak menü çubuğunun arkasında; çubuk düz renk (koyu temada koyu), dock gizli/altta belirir,
+  çubuk üzerinde 0,6 sn bekleyince altında trafik ışıklı şerit. Durum: $XDG_RUNTIME_DIR/liquid/
+  fullscreen.json (bar yeniden başlarsa korunur; dock SIGUSR2 ile haber alır). ⌃⌘F → bar'a SIGUSR2.
+  Uygulamanın kendi tam ekranı (F11/video) ayrı: çubuk+dock gizli, şerit en üstte. Test: 6 adım + F11 geçti.
+
+## 5e. Yeni tuzaklar
+- xfwm4 `_NET_MOVERESIZE_WINDOW` (wnck set_geometry) konumuna çerçeve kalınlığını bir kez DAHA ekliyor:
+  istek = istemci − 2×kenar. Başlık çubuğunu üst strut'un altına sokmuyor → yerleştirirken bar
+  strut'u ~0,4 sn kaldırılır; geri gelince pencere yerinde kalır.
+- GTK pencerede `_MOTIF_WM_HINTS` değiştirip unmap/map yapmak başlığı kaldırmıyor (GTK haritalarken
+  kendi ipucunu yeniden yazıyor).
+- 21:0x — HATA (kullanıcı ekranda gördü): Claude ☐ ile macOS tam ekranına girince pencere y=0'a
+  kaydı (üst 30 px menünün arkasında, altta 30 px duvar kâğıdı boşluğu). Düzeltme: kenarlıksız
+  pencerelerde bar strut'u kaldırılmıyor + 0,7 sn sonra konum doğrulanıp gerekirse yeniden yerleştiriliyor.
+  Gerçek Claude penceresinde ☐ çıkış/giriş test edildi: (0, 30, 1920, 1050).
+- Tuzak: Electron, çalışma alanı (strut) değişince kendi sınırlarını yeniden uygular → kenarlıksız
+  pencerelerde strut'a dokunma; yerleştirmeden sonra her zaman doğrula.
+- 21:07 — Kullanıcı: macOS tam ekranında üst şerit YALNIZCA düz renk olmalı (menü, simge, saat yok).
+  → mac modunda bar'ın içeriği gizleniyor (`get_child().set_visible`). Normal pencereye geçince geri geliyor (test edildi).
+- 21:09 — Kullanıcı: imleç en üst çubuğa gelince menü içeriği GÖRÜNMELİ (macOS). → mac modunda 100 ms
+  imleç yoklaması: çubuktayken içerik görünür; menü açıkken (uygulama/Elma/pil/Wi-Fi) ya da imleç alttaki
+  başlık şeridindeyken açık kalır; aşağı inince düz renk. Claude tam ekranında ekran görüntüsüyle doğrulandı.

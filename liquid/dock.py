@@ -14,6 +14,7 @@ Ayarlar: ~/.config/liquid/dock.ini  [dock] items, icon_size, magnify
 import configparser
 import math
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -28,6 +29,7 @@ from gi.repository import Gtk, Gdk, GdkPixbuf, Gio, GLib, Wnck, Pango, PangoCair
 
 from .core import design, wallpaper, daemon, apps, config_path, screen_geometry, set_strut  # noqa: E402
 from .core.i18n import t  # noqa: E402
+from . import fullscreen  # noqa: E402
 
 CONF = config_path("dock.ini")
 ASSETS = os.path.join(daemon.ROOT, "assets")
@@ -148,6 +150,11 @@ class Dock(Gtk.Window):
         self.wnck.connect("active-workspace-changed", lambda *_: self._check_wallpaper())
         self.refresh()
         GLib.timeout_add_seconds(2, self._poll)
+        # tam ekranda dock gizli; fare en alta gelince belirir (macOS)
+        self.fs_hidden = False
+        self._fs_poll_id = None
+        self._edge_since = None
+        self.fs = fullscreen.Watcher(self.wnck, self._fs_changed)
 
     # ---------- düzen ----------
     def _strut(self):
@@ -295,8 +302,45 @@ class Dock(Gtk.Window):
         self.bg_x, self.bg_w = (self.mw - total2) / 2, total2
         self.bg_y = self.WIN_H - design.DOCK_BOTTOM - self.BG_H
 
+    def _fs_changed(self, fs):
+        if fs and self._fs_poll_id is None:
+            self._fs_poll_id = GLib.timeout_add(fullscreen.POLL_MS, self._fs_poll)
+        elif not fs and self._fs_poll_id is not None:
+            GLib.source_remove(self._fs_poll_id)
+            self._fs_poll_id = None
+        self._edge_since = None
+        self._fs_hide(fs)
+
+    def _fs_hide(self, hidden):
+        self.fs_hidden = hidden
+        fullscreen.set_hidden(self, hidden)
+        if not hidden:
+            self._input()
+
+    def _fs_poll(self):
+        x, y = fullscreen.pointer()
+        bottom = self.my + self.mh
+        inside = self.mx <= x < self.mx + self.mw
+        if self.fs_hidden:
+            if inside and y >= bottom - 2:
+                now = time.monotonic()
+                self._edge_since = self._edge_since or now
+                if now - self._edge_since >= 0.25:
+                    self._edge_since = None
+                    self._fs_hide(False)
+                    if self.get_window() is not None:
+                        self.get_window().raise_()
+            else:
+                self._edge_since = None
+        elif self.press is None and (not inside or y < bottom - self.WIN_H):
+            self._fs_hide(True)
+        return True
+
     def _input(self):
         if not self.get_window():
+            return
+        if self.fs_hidden:
+            self.input_shape_combine_region(cairo.Region())
             return
         self._layout()
         grow = self.mouse_x is not None or self.hover > 0
@@ -594,6 +638,7 @@ def main():
     css.load_from_data(MENU_CSS.encode())
     Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_USER + 10)
     d = Dock()
+    daemon.on_signal(signal.SIGUSR2, d.fs.check)          # bar: macOS tam ekranı değişti
     d.connect("destroy", Gtk.main_quit)
     d.show_all()
     GLib.timeout_add(300, lambda: (d._input(), False)[1])

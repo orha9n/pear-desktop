@@ -112,8 +112,9 @@ fi
 ok "~/.xprofile (oturumu kapatıp açınca etkin)"
 
 # ---------- 6) kısayol + oturum başlangıcı ----------
-say "6/7  ⌘Space (Super+Space) → Spotlight, otomatik başlatma"
+say "6/7  ⌘Space → Spotlight, ⌃⌘F → tam ekran, otomatik başlatma"
 xset xfce4-keyboard-shortcuts "/commands/custom/<Super>space" string "$ROOT/bin/liquid toggle spotlight"
+xset xfce4-keyboard-shortcuts "/commands/custom/<Primary><Super>f" string "$ROOT/bin/liquid fullscreen"
 mkdir -p "$HOME/.config/autostart"
 cat > "$HOME/.config/autostart/liquid.desktop" <<EOF
 [Desktop Entry]
