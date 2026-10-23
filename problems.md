@@ -213,7 +213,7 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
     pencereyi küçültüyor ([dock.py:511](liquid/dock.py:511)); macOS'ta bir şey olmaz.
 25. **Sahte cam:** dock/CC/Spotlight camı yalnızca duvar kâğıdını bulanıklaştırıyor; arkadaki pencereler
     görünmüyor (dock'un arkasına sürüklenen pencere camda yok).
-26. **Bellek:** 6 ayrı Python+GTK süreci ≈ 400 MB RSS (launcher 117 MB, dock 81 MB, spotlight 72 MB, bar 71 MB…).
+26. ✅ (Asıl neden süreç sayısı değil, duvar kâğıdıydı: Mint'in 9600×5400 progressive JPEG'i her bileşende ayrı tam çözülüyor, ~270 MB kalıyordu. Artık küçük ölçekte çözülüp `malloc_trim` ile iade ediliyor ve ekran boyutundaki sonuç `~/.cache/liquid/wp/` ile paylaşılıyor. Toplam PSS ~1370 → 219 MB. Panelleri tek sürece birleştirmek ~50 MB daha kazandırırdı; çökme yalıtımı için yapılmadı.) **Bellek:** 6 ayrı Python+GTK süreci ≈ 400 MB RSS (launcher 117 MB, dock 81 MB, spotlight 72 MB, bar 71 MB…).
 27. ✅ (`.xprofile` bloğu modül zaten varsa eklemiyor (install yeniden yazar; kullanıcının bloğu güncellendi).) **`.xprofile` GTK_MODULES'u ikiler:** Mint zaten `appmenu-gtk-module` ekliyor; oturumda
     `GTK_MODULES=appmenu-gtk-module:appmenu-gtk-module:gail:atk-bridge`.
 28. ✅ (Sığmayan menüler » altına (`_fit`); 16 uzun menüyle doğrulandı.) **Uzun global menüler** sağdaki saat/simgelerle çakışabilir; menü çubuğunda taşma/kısaltma yok.

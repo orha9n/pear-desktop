@@ -81,11 +81,49 @@ def current(workspace=None):
 
 
 def _screen_image(path, style, mw, mh):
+    """Ekran boyutuna yerleştirilmiş duvar kâğıdı. Sonuç ~/.cache/liquid/wp/ altında PNG olarak tüm
+    bileşenlerle paylaşılır: progressive JPEG küçük ölçekte çözülürken bile libjpeg tüm katsayıları
+    tutuyor (9600×5400 → ~180 MB tepe); her bileşen ayrı çözmesin, ilk gelen bir kez çözsün."""
+    import fcntl
+    import hashlib
     from PIL import Image
     key = ("img", path, style, mw, mh, os.path.getmtime(path))
     if key in _cache:
         return _cache[key]
-    src = Image.open(path).convert("RGB")
+    d = os.path.join(os.path.expanduser("~/.cache/liquid"), "wp")
+    os.makedirs(d, exist_ok=True)
+    disk = os.path.join(d, hashlib.sha1(repr(key).encode()).hexdigest()[:16] + ".png")
+    with open(os.path.join(d, ".lock"), "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)              # aynı anda başlayan bileşenler sırayla
+        if os.path.exists(disk):
+            try:
+                im = Image.open(disk).convert("RGB")
+                _cache.clear()
+                _cache[key] = im
+                return im
+            except Exception:
+                pass
+        im = _render(path, style, mw, mh)
+        for old in os.listdir(d):                     # eski duvar kâğıtlarının önbelleği
+            if old.endswith(".png") and len(os.listdir(d)) > 8:
+                os.remove(os.path.join(d, old))
+        im.save(disk + ".tmp", "PNG", compress_level=1)
+        os.replace(disk + ".tmp", disk)
+    _cache.clear()                     # tek duvar kâğıdı tutulur (bellek)
+    _cache[key] = im
+    return im
+
+
+def _render(path, style, mw, mh):
+    from PIL import Image
+    src = Image.open(path)
+    iw, ih = src.size
+    # JPEG'i doğrudan gereken ölçeğe yakın çöz (1/2, 1/4, 1/8): Mint'in 9600×5400 duvar kâğıdı tam
+    # çözülünce 156 MB, yeniden boyutlandırırken ~270 MB oluyordu — her bileşende ayrı ayrı.
+    if style in (3, 4, 5) or style not in (1, 2):
+        s = min(mw / iw, mh / ih) if style == 4 else max(mw / iw, mh / ih)
+        src.draft("RGB", (max(1, int(iw * s)), max(1, int(ih * s))) if style != 3 else (mw, mh))
+    src = src.convert("RGB")
     iw, ih = src.size
     if style == 3:                                  # uzat
         im = src.resize((mw, mh), Image.LANCZOS)
@@ -105,9 +143,18 @@ def _screen_image(path, style, mw, mh):
         im = src.resize((max(mw, round(iw * s)), max(mh, round(ih * s))), Image.LANCZOS)
         x0, y0 = (im.width - mw) // 2, (im.height - mh) // 2
         im = im.crop((x0, y0, x0 + mw, y0 + mh))
-    _cache.clear()                     # tek duvar kâğıdı tutulur (bellek)
-    _cache[key] = im
+    del src
+    _trim()
     return im
+
+
+def _trim():
+    """Büyük geçici PIL tamponları serbest kalınca glibc belleği sisteme geri vermiyor → iade et."""
+    try:
+        import ctypes
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+    except Exception:
+        pass
 
 
 def _to_surface(im):
@@ -139,6 +186,7 @@ def region(mw, mh, x, y, w, h, blur=28, saturate=1.25, workspace=None):
         part = ImageEnhance.Color(part).enhance(saturate)
         part = part.crop((x - box[0], y - box[1], x - box[0] + w, y - box[1] + h))
         surf = _to_surface(part)
+        _trim()
     except Exception:
         return None
     _cache[key] = surf

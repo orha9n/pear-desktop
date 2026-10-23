@@ -224,3 +224,6 @@ macbook/
   çalışır, XFCE'de sessizce çıkar → ayarı değiştirme, süreç ortamında XDG_CURRENT_DESKTOP=MATE.
 - MacTahoe SCSS'i derlemek için önce _theme-options-temp.scss ve _gtk-base-temp.scss kopyaları gerekir.
 - GObject.BindingFlags (GLib.BindingFlags DEĞİL).
+- 21:4x — Bellek (26): bileşen başına ~270 MB'ın nedeni 9600×5400 progressive JPEG (libjpeg küçük ölçekte de
+  tüm katsayıları tutuyor). draft + malloc_trim + ekran boyutlu PNG disk önbelleği (flock ile tek çözüm).
+  PSS toplamı 1370 → 219 MB. Ölçümde RSS değil PSS'e (smaps_rollup) bak.
