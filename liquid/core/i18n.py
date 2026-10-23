@@ -50,7 +50,10 @@ S = {
     # durum menüleri
     "battery": ("Battery", "Pil"), "power_source": ("Power Source", "Güç Kaynağı"),
     "power_adapter": ("Power Adapter", "Güç Adaptörü"), "battery_settings": ("Battery Settings…", "Pil Ayarları…"),
-    "wifi_settings": ("Wi-Fi Settings…", "Wi-Fi Ayarları…"), "other_networks": ("Other Networks", "Diğer Ağlar"),
+    "wifi_settings": ("Wi-Fi Settings…", "Wi-Fi Ayarları…"),
+    "wifi_password": ("The Wi-Fi network “{}” requires a password.", "“{}” Wi-Fi ağı bir şifre gerektiriyor."),
+    "wifi_failed": ("Couldn’t join “{}”.", "“{}” ağına katılınamadı."),
+    "password": ("Password", "Şifre"), "join": ("Join", "Katıl"), "other_networks": ("Other Networks", "Diğer Ağlar"),
     # Uygulamalar ekranı / Spotlight / CC
     "search": ("Search", "Ara"), "no_results": ("No Results", "Sonuç Yok"),
     "spotlight": ("Spotlight Search", "Spotlight'ta Ara"), "web_search": ("Search the web for “{}”", "Web'de “{}” ara"),
@@ -67,14 +70,21 @@ S = {
 
 
 def _lang():
-    for v in ("LC_ALL", "LC_MESSAGES", "LANG", "LANGUAGE"):
-        val = os.environ.get(v, "")
-        if val:
-            return val.split(":")[0].split(".")[0].split("_")[0].lower()
-    return "en"
+    """gettext sırası: LANGUAGE en öncelikli — ama yerel ayar C/POSIX ise gettext onu yok sayar."""
+    loc = next((os.environ[v] for v in ("LC_ALL", "LC_MESSAGES", "LANG") if os.environ.get(v)), "")
+    if loc.split(".")[0] in ("", "C", "POSIX"):
+        return "en"
+    val = os.environ.get("LANGUAGE") or loc
+    return val.split(":")[0].split(".")[0].split("_")[0].lower()
 
 
 LANG = _lang()
+
+
+def fold(s):
+    """Arama için büyük/küçük harf katlama. str.lower() "İ"yi "i̇" (i + birleşik nokta) yapar ve
+    "İstanbul" "ist" ile eşleşmez; ı/i/I/İ hepsi "i" sayılır (Türkçe ve İngilizce adlar birlikte bulunur)."""
+    return (s or "").replace("İ", "i").replace("I", "i").replace("ı", "i").casefold().replace("i\u0307", "i")
 
 
 def t(key):

@@ -57,10 +57,18 @@ def main():
     if not daemon.claim("session"):
         return
     signal.signal(signal.SIGTERM, lambda *a: (stop_all(), os._exit(0)))
+    daemon.note("oturum başladı")
+    seen = {}
     while True:
         stop_xfce_panel()
         for name in COMPONENTS:
-            daemon.start(name)            # çalışıyorsa bir şey yapmaz
+            pid = daemon.running(name)
+            if pid is None:
+                if seen.get(name):        # çalışıyordu, artık yok → çöktü ya da öldürüldü
+                    daemon.note(f"{name} (PID {seen[name]}) kapanmış — yeniden başlatılıyor "
+                                f"(çökme ise: coredumpctl info {seen[name]})")
+                daemon.start(name)
+            seen[name] = pid
         time.sleep(5)
 
 

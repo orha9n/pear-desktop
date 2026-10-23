@@ -63,7 +63,7 @@ macbook/
 4. [x] `core/`: tasarım sabitleri, glass çizici, wallpaper blur, daemon yardımcıları, app eşleme
 5. [x] Bağımlılıkları kur (apt — sudo parolasını kullanıcı terminalde girer)
 6. [x] MacTahoe GTK + ikonlar + imleç + Inter + duvar kâğıdı (indir, `~/.themes`, `~/.local/share/icons`)
-7. [ ] `bar.py` — saydam menü çubuğu (PNG ile ölçerek karşılaştır)
+7. [x] `bar.py` — saydam menü çubuğu (PNG ile ölçerek karşılaştır)
 8. [x] `dock.py` — Liquid Glass dock (önizlemede MacTahoe ikonlarıyla doğrulandı)
 9. [x] `widgets.py` — takvim, analog saat, fotoğraf (önizlemede doğrulandı)
 10. [x] `launcher.py` — Uygulamalar ızgarası (bellek çiziminde doğrulandı)
@@ -212,3 +212,6 @@ macbook/
 - 21:09 — Kullanıcı: imleç en üst çubuğa gelince menü içeriği GÖRÜNMELİ (macOS). → mac modunda 100 ms
   imleç yoklaması: çubuktayken içerik görünür; menü açıkken (uygulama/Elma/pil/Wi-Fi) ya da imleç alttaki
   başlık şeridindeyken açık kalır; aşağı inince düz renk. Claude tam ekranında ekran görüntüsüyle doğrulandı.
+- 21:2x — problems.md 1. grup düzeltildi (6, 8, 11, 12, 14–19, 21, 23, 27, 30–32, 34, 35). Tüm bileşenler +
+  bekçi yeniden başlatıldı. Kullanıcı: testlerde fareyi/ekranı KULLANMA (xdotool tıklaması reddedildi) →
+  bundan sonra doğrulama ekran dışı (birim test, kuru çalıştırma, süreç sayımı) ya da kullanıcıya sorarak.

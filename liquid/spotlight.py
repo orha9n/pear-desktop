@@ -25,7 +25,7 @@ gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, Gdk, GLib, Gio, GdkPixbuf, Pango, PangoCairo  # noqa: E402
 
 from .core import design, wallpaper, daemon, apps, screen_geometry  # noqa: E402
-from .core.i18n import t  # noqa: E402
+from .core.i18n import t, fold  # noqa: E402
 
 W = 680
 BAR = 58
@@ -59,12 +59,19 @@ def calc(expr):
         r = _ev(ast.parse(e.replace("^", "**"), mode="eval").body)
     except Exception:
         return None
-    if isinstance(r, float):
-        if r != r or abs(r) == float("inf"):
-            return None
-        s = str(int(r)) if r.is_integer() and abs(r) < 1e15 else f"{r:.10g}"
-    else:
-        s = str(r) if abs(r) < 10 ** 15 else f"{r:.6e}"
+    try:
+        if isinstance(r, float):
+            if r != r or abs(r) == float("inf"):
+                return None
+            s = str(int(r)) if r.is_integer() and abs(r) < 1e15 else f"{r:.10g}"
+        elif abs(r) < 10 ** 15:
+            s = str(r)
+        else:
+            # float'a sığmayan tamsayı (9^999): f"{r:.6e}" OverflowError veriyordu → Decimal ile bilimsel gösterim
+            from decimal import Decimal
+            s = f"{Decimal(r):.6e}"
+    except (OverflowError, ValueError):
+        return None
     return s.replace(".", ",") if os.environ.get("LANG", "").startswith("tr") else s
 
 
@@ -82,7 +89,7 @@ def scan_files(root, depth=4, limit=40000):
                         isdir = en.is_dir(follow_symlinks=False)
                     except OSError:
                         continue
-                    out.append((en.name.lower(), en.path, isdir))
+                    out.append((fold(en.name), en.path, isdir))
                     if isdir and lv < depth:
                         stack.append((en.path, lv + 1))
         except OSError:
@@ -194,7 +201,7 @@ class Spotlight(Gtk.Window):
     # ---------- arama ----------
     def _search(self):
         q = self.entry.get_text().strip()
-        ql = q.lower()
+        ql = fold(q)
         res = []
         if q:
             c = calc(q)
@@ -202,7 +209,7 @@ class Spotlight(Gtk.Window):
                 res.append(("calc", "= " + c, t("app_calculator"), "accessories-calculator", c))
             hits = []
             for a in self.apps:
-                n = a["name"].lower()
+                n = a["key"]
                 r = 0 if n.startswith(ql) else 1 if any(w.startswith(ql) for w in n.split()) else \
                     2 if ql in n else 3 if ql in a["kw"] else None
                 if r is not None:
@@ -216,6 +223,8 @@ class Spotlight(Gtk.Window):
                 for *_, p, d in fh:
                     res.append(("file", os.path.basename(p), os.path.dirname(p).replace(home, "~", 1),
                                 "folder" if d else "text-x-generic", p))
+            # en fazla MAXROWS satır çiziliyor: fazlası görünmez seçilip açılabiliyordu; web araması hep son satır
+            res = res[:MAXROWS - 1]
             res.append(("web", t("web_search").format(q), "DuckDuckGo", "web-browser", q))
         self.results, self.sel = res, 0
         self._resize()
@@ -227,10 +236,11 @@ class Spotlight(Gtk.Window):
         if kind == "app":
             apps.launch(data["info"])
         elif kind == "file":
-            subprocess.Popen(["xdg-open", data], start_new_session=True)
+            subprocess.Popen(["xdg-open", data], start_new_session=True,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         elif kind == "web":
             subprocess.Popen(["xdg-open", "https://duckduckgo.com/?q=" + urllib.parse.quote_plus(data)],
-                             start_new_session=True)
+                             start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         elif kind == "calc":
             Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD).set_text(data, -1)
         self.hide()
@@ -332,6 +342,7 @@ def main():
     if not daemon.claim("spotlight"):
         return
     sp = Spotlight()
+    GLib.idle_add(lambda: (sp._resize(), False)[1])      # cam arka planını önceden hesapla
     daemon.on_signal(signal.SIGUSR1, sp.toggle)
     if "--show" in sys.argv:
         GLib.timeout_add(150, lambda: (sp.show_spot(), False)[1])

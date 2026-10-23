@@ -33,7 +33,8 @@ from gi.repository import Gtk, Gdk, GLib, Gio, Wnck, Dbusmenu, GdkPixbuf  # noqa
 from .core import design, wallpaper, daemon, apps, screen_geometry, set_strut  # noqa: E402
 from .core.i18n import t  # noqa: E402
 from . import applemenu, fullscreen  # noqa: E402
-from .glyphs import Glyph, battery_state, wifi_state  # noqa: E402
+from .glyphs import Glyph, battery_state  # noqa: E402
+from . import wifi  # noqa: E402
 
 H = design.BAR_H
 MODS = {"Control": "⌃", "Shift": "⇧", "Alt": "⌥", "Super": "⌘"}
@@ -224,6 +225,7 @@ class Bar(Gtk.Window):
         self._dirty = False
         self._reveal_id = None
         self._popup_open = False
+        self._wifi = (True, "", 0, [])  # wifi.scan() önbelleği (_poll doldurur)
         self.wnck.connect("active-window-changed", lambda *_: GLib.idle_add(self.on_active))
         self.wnck.connect("active-workspace-changed", lambda *_: self._update_text_color())
         # yeşil düğme → macOS tam ekranı (pencere çubuğun altında, çubuk düz renk); uygulamanın kendi
@@ -445,8 +447,8 @@ class Bar(Gtk.Window):
         self._popup(m, btn)
 
     def _wifi_menu(self, btn):
-        import subprocess
-        on, ssid, _ = wifi_state()
+        # liste arka plandaki yoklamadan (_poll) gelir: menü açılırken nmcli beklenmez
+        on, ssid, _, nets = self._wifi
         m = Gtk.Menu()
         head = Gtk.CheckMenuItem(label="Wi-Fi")
         head.set_active(on)
@@ -455,22 +457,12 @@ class Bar(Gtk.Window):
         m.append(head)
         if on:
             m.append(sep())
-            rows = subprocess.run(["env", "LC_ALL=C.UTF-8", "nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY",
-                                   "dev", "wifi", "list", "--rescan", "no"],
-                                  capture_output=True, text=True).stdout.splitlines()
             sh_bg(["nmcli", "dev", "wifi", "rescan"])      # bir sonraki açılışa taze liste
-            seen, nets = set(), []
-            for r in rows:
-                parts = re.split(r"(?<!\\):", r)
-                if len(parts) < 3 or not parts[0] or parts[0] in seen:
-                    continue
-                seen.add(parts[0])
-                nets.append((parts[0].replace("\\:", ":"), int(parts[1] or 0), parts[2]))
-            nets.sort(key=lambda n: (n[0] != ssid, -n[1]))
             for nm, sig, sec in nets[:10]:
-                mi = Gtk.CheckMenuItem(label=nm + ("  🔒" if sec and sec != "--" else ""))
+                mi = Gtk.CheckMenuItem(label=nm + ("  🔒" if sec else ""))
                 mi.set_active(nm == ssid)
-                mi.connect("activate", lambda w, n=nm: sh_bg(["nmcli", "dev", "wifi", "connect", n]))
+                if nm != ssid:                              # bağlı ağa tıklamak bağlantıyı yeniden kurmasın
+                    mi.connect("activate", lambda w, n=nm, s=sec: wifi.connect(n, s))
                 m.append(mi)
         m.append(sep())
         m.append(item(t("wifi_settings"), lambda: sh_bg(["nm-connection-editor"])))
@@ -489,8 +481,9 @@ class Bar(Gtk.Window):
             self.g_batt.queue_draw()
 
         def wifi_bg():
-            st = wifi_state()
-            GLib.idle_add(lambda: (setattr(self.g_wifi, "state", st), self.g_wifi.queue_draw(), False)[2])
+            st = wifi.scan()
+            GLib.idle_add(lambda: (setattr(self, "_wifi", st), setattr(self.g_wifi, "state", st[:3]),
+                                   self.g_wifi.queue_draw(), False)[3])
         threading.Thread(target=wifi_bg, daemon=True).start()
         return True
 

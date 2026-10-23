@@ -21,7 +21,7 @@ gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, Gdk, GdkPixbuf, Gio, GLib, Pango, PangoCairo  # noqa: E402
 
 from .core import design, wallpaper, daemon, apps, screen_geometry  # noqa: E402
-from .core.i18n import t  # noqa: E402
+from .core.i18n import t, fold  # noqa: E402
 
 COLS, ROWS = 7, 5
 PER = COLS * ROWS
@@ -29,7 +29,7 @@ ANIM_MS = 170
 
 
 def rank(a, q):
-    n = a["name"].lower()
+    n = a["key"]
     if n.startswith(q):
         return 0
     if any(w.startswith(q) for w in n.split()):
@@ -148,11 +148,11 @@ class Launcher(Gtk.Window):
         return False
 
     def _filter(self):
-        q = self.entry.get_text().strip().lower()
+        q = fold(self.entry.get_text().strip())
         if not q:
             self.view = self.apps
         else:
-            hits = [(r, a["name"].casefold(), a) for a in self.apps if (r := rank(a, q)) is not None]
+            hits = [(r, a["key"], a) for a in self.apps if (r := rank(a, q)) is not None]
             self.view = [h[2] for h in sorted(hits, key=lambda h: (h[0], h[1]))]
         self.page, self.offset = 0, 0.0
         self.area.queue_draw()

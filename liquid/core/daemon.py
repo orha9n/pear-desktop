@@ -9,6 +9,7 @@ import signal
 import subprocess
 import sys
 
+LOG_MAX = 512 * 1024              # bileşen logu bunu aşarsa başlatırken <ad>.log.1'e döndürülür
 RUN = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or os.path.expanduser("~/.cache"), "liquid")
 LOGS = os.path.expanduser("~/.cache/liquid")
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -60,12 +61,29 @@ def start(name, *args):
     os.makedirs(LOGS, exist_ok=True)
     env = dict(os.environ)
     env["PYTHONPATH"] = ROOT + (":" + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
-    log = open(os.path.join(LOGS, f"{name}.log"), "a")
+    path = os.path.join(LOGS, f"{name}.log")
+    try:
+        if os.path.getsize(path) > LOG_MAX:
+            os.replace(path, path + ".1")
+    except OSError:
+        pass
+    log = open(path, "a")
     try:
         subprocess.Popen(["setsid", "-f", sys.executable, "-m", f"liquid.{name}", *args],
                          stdout=log, stderr=log, stdin=subprocess.DEVNULL, env=env, cwd=ROOT)
     finally:
         log.close()
+
+
+def note(msg):
+    """Oturum günlüğü (~/.cache/liquid/session.log): çökme/yeniden başlatma izleri."""
+    import time
+    try:
+        os.makedirs(LOGS, exist_ok=True)
+        with open(os.path.join(LOGS, "session.log"), "a") as f:
+            f.write(time.strftime("%Y-%m-%d %H:%M:%S ") + msg + "\n")
+    except OSError:
+        pass
 
 
 def signal_component(name, sig=signal.SIGUSR1):

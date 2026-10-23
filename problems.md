@@ -62,7 +62,8 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
   varsayılan davranışı **süreci sonlandırmak**. Widget'lar açıkken saate tıklanınca hepsi kaybolur,
   5 sn sonra bekçi geri açar. (macOS'ta saat tıklaması Bildirim Merkezi'ni açar.)
 
-### 6. Uygulama eşleme yanlış: Python betiği olan uygulamalar "Python (v3.12)" görünüyor
+### 6. ✅ DÜZELTİLDİ — Uygulama eşleme yanlış: Python betiği olan uygulamalar "Python (v3.12)" görünüyor
+> Yorumlayıcı süreçlerde (python3.12 vb.) betik adına bakılıyor, WM_CLASS'tan `.py` atılıyor; sahte mintinstall penceresi "App Store" olarak eşlendi.
 - **Kanıt:** Yazılım Yöneticisi (mintinstall) açıkken menü çubuğunda **"Python (v3.12)"** yazıyordu; dock'ta
   App Store yerine ayrı bir **Python** ikonu çalışıyor (noktalı) göründü.
 - **Yer:** [core/apps.py:115-125](liquid/core/apps.py:115). WM_CLASS `mintinstall.py` eşleşmiyor,
@@ -80,7 +81,8 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
 - **Öneri:** Çubuğun sağına StatusNotifierItem/XEmbed tepsi desteği ekle (ya da XFCE panelini yalnız tepsi
   eklentisiyle küçük ve saydam bırak).
 
-### 8. Uygulamaların çıktıları Liquid loglarına akıyor ve loglar sınırsız büyüyor
+### 8. ✅ DÜZELTİLDİ — Uygulamaların çıktıları Liquid loglarına akıyor ve loglar sınırsız büyüyor
+> Uygulamalar `launch_uris_as_manager` + `/dev/null` ile açılıyor (dock eylemleri, Spotlight `xdg-open` dahil); loglar 512 KB'ta `.log.1`'e dönüyor; bekçi kapanan bileşeni `session.log`'a yazıyor.
 - **Kanıt:** `~/.cache/liquid/dock.log` içinde Chrome'un `ssl_client_socket_impl` hataları,
   `gnome-calculator` uyarıları var.
 - **Yer:** [core/daemon.py:63-66](liquid/core/daemon.py:63) bileşenin stdout/stderr'i log dosyası;
@@ -114,14 +116,16 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
   çizmiyordu; kart metni arkadaki pencerelerin üstünde yüzüyordu. Arka plan artık `_card_bg()` ile
   çiziliyor ([applemenu.py](liquid/applemenu.py)).
 
-### 11. Control Center menü çubuğundan tıklayınca açık kalmıyor (gözlem — doğrulanmalı)
+### 11. ✅ DÜZELTİLDİ — Control Center menü çubuğundan tıklayınca açık kalmıyor (gözlem — doğrulanmalı)
+> Tekrar üretilemedi: tıklayınca açılıp açık kalıyor. İlk açılış ~1,2 sn sürüyordu (cam arka planı o an hesaplanıyor) → başlarken önceden hesaplanıyor.
 - `liquid toggle controlcenter` ile açılıp kapanıyor (doğrulandı). Ama menü çubuğundaki CC simgesine
   `xdotool` ile tıklandığında 1,5 sn sonra pencere `IsUnMapped` idi (2 deneme).
 - Olası neden: açıldıktan hemen sonra gelen odak kaybı ([controlcenter.py:202](liquid/controlcenter.py:202)).
   Aynı desen Spotlight ve Uygulamalar ekranında da var: açıkken simgeye tıklamak **önce odak kaybıyla
   kapatıp sonra sinyalle yeniden açabilir** (aç/kapat çakışması).
 
-### 12. Kaydırıcılar her fare hareketinde yeni süreç başlatıyor
+### 12. ✅ DÜZELTİLDİ — Kaydırıcılar her fare hareketinde yeni süreç başlatıyor
+> `Applier`: anahtar başına tek işçi, yalnızca son değer uygulanıyor (50 hareket → 2 tur).
 - [controlcenter.py:384-388](liquid/controlcenter.py:384): sürüklerken her `motion` olayında
   `brightnessctl` ya da **iki** `pactl` süreci açılıyor (saniyede onlarca). Sıra garantisi yok;
   son değer bazen önceki komuttan önce uygulanıp ses/parlaklık "geri sıçrayabilir".
@@ -133,16 +137,19 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
   açık renkte çiziliyor ([applemenu.py:18](liquid/applemenu.py:18) `MENU_CSS` vb.). Karanlık modda
   uyumsuz görünür.
 
-### 14. Spotlight: seçili satır görünmez olabiliyor
+### 14. ✅ DÜZELTİLDİ — Spotlight: seçili satır görünmez olabiliyor
+> Sonuçlar 9 satırla sınırlı; web araması her zaman son satır.
 - Sonuç sayısı en fazla 1 (hesap) + 6 (uygulama) + 4 (dosya) + 1 (web) = 12; çizilen en fazla `MAXROWS = 9`.
   ↑/↓ seçimi `len(results)` üzerinden dönüyor ([spotlight.py:243](liquid/spotlight.py:243)) → seçim
   görünmeyen 10.–12. satırlara gidebiliyor; Enter görünmeyen öğeyi açar. "Web'de ara" satırı bu durumda hiç görünmez.
 
-### 15. Spotlight hesaplayıcı büyük sayılarda hata veriyor
+### 15. ✅ DÜZELTİLDİ — Spotlight hesaplayıcı büyük sayılarda hata veriyor
+> Büyük tamsayılar `Decimal` ile bilimsel gösterim (`9^999` → `1,942079e+953`).
 - `9^999` gibi bir giriş: üs sınırı (≤1000) geçiliyor, sonuç çok büyük tamsayı →
   [spotlight.py:67](liquid/spotlight.py:67) `f"{r:.6e}"` → `OverflowError` (yakalanmıyor; arama o tuşta güncellenmez).
 
-### 16. Her tuşa/saniyeye alt süreç başlatılıyor
+### 16. ✅ DÜZELTİLDİ — Her tuşa/saniyeye alt süreç başlatılıyor
+> Duvar kâğıdı ayarları tek `xfconf-query -lv` ile 4 sn önbellekte, `xrandr --current` 30 sn; Liquid'in alt süreçleri ~45 → 8 / 15 sn.
 - `wallpaper.current()` her çağrıda `xrandr` + 2× `xfconf-query` çalıştırıyor
   ([core/wallpaper.py:21-43](liquid/core/wallpaper.py:21)). Çağrılan yerler:
   - Analog saat widget'ı **her saniye** ([widgets.py:135](liquid/widgets.py:135), [widgets.py:202](liquid/widgets.py:202)) → ~3 süreç/sn,
@@ -150,19 +157,22 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
   - dock her 2 sn, bar her 3 sn.
 - **Öneri:** `xfconf-query -m` ile değişikliği izle (ya da xfconf D-Bus `PropertyChanged`) ve sonucu önbellekle.
 
-### 17. Çalışma alanı değişince yanlış duvar kâğıdı kullanılıyor
+### 17. ✅ DÜZELTİLDİ — Çalışma alanı değişince yanlış duvar kâğıdı kullanılıyor
+> Etkin çalışma alanı (ya da xfdesktop "tümüne uygula" numarası) kullanılıyor; ortala/döşe/uzat/sığdır/yakınlaştır stilleri doğru çiziliyor.
 - `wallpaper.current(workspace=0)` hep 0. çalışma alanını okuyor; bar/dock `active-workspace-changed`
   dinliyor ama yine workspace0'a bakıyor ([bar.py:224](liquid/bar.py:224), [dock.py:142](liquid/dock.py:142)).
   Çalışma alanlarında farklı duvar kâğıdı varsa dock camı ve menü çubuğu yazı rengi yanlış olur.
 - Ayrıca stil 1 (ortala), 2 (döşe), 4 (ölçekle) "kapla" gibi hesaplanıyor → cam arka planı gerçek görüntüyle örtüşmez.
 
-### 18. Uninstall, kurulumdan sonra yapılan duvar kâğıdı seçimlerini de eziyor
+### 18. ✅ DÜZELTİLDİ — Uninstall, kurulumdan sonra yapılan duvar kâğıdı seçimlerini de eziyor
+> values.tsv'ye 5. sütun (Liquid'in yazdığı değerin deseni); uninstall değeri sonradan değişmişse dokunmuyor. Kuru çalıştırma: kullanıcının çizgili duvar kâğıdı korunuyor.
 - `install.sh` başlığı "sonradan yaptığın ayarlara dokunmaz" diyor, ama `uninstall.sh` `values.tsv`'deki
   her özelliği koşulsuz eski değere yazıyor ([uninstall.sh:19-27](uninstall.sh:19)). Kullanıcı bugün duvar
   kâğıdını zaten değiştirdi (Mint çizgili duvar kâğıdı); kaldırma bunu ezecek.
 - **Öneri:** Geri yüklemeden önce mevcut değerin hâlâ Liquid'in yazdığı değer olup olmadığını kontrol et.
 
-### 19. Wi-Fi menüsü
+### 19. ✅ DÜZELTİLDİ — Wi-Fi menüsü
+> Liste arka planda (`wifi.scan`) alınıyor; kayıtlı ağa `nmcli con up`, yeni şifreli ağa şifre kartı + NetworkManager D-Bus (şifre komut satırında görünmez); bağlı ağa tıklamak bir şey yapmıyor; hata bildirimi. Gerçek bir yeni ağa bağlanma denenmedi.
 - Şifreli ve kayıtlı olmayan ağa tıklamak `nmcli dev wifi connect <ad>` ile **şifre sormadan** başarısız
   oluyor, kullanıcıya hiçbir şey gösterilmiyor ([bar.py:350](liquid/bar.py:350)).
 - Ağ listesi menü açılmadan önce ana iş parçacığında senkron `nmcli` ile alınıyor ([bar.py:335](liquid/bar.py:335));
@@ -176,7 +186,8 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
 - `Super_L` tek başına kullanıcının `linuxhelper` kısayoluna bağlı; `Super+Space` ile çakışıp çakışmadığı
   (Super bırakılınca linuxhelper'ın da açılması) kontrol edilmeli.
 
-### 21. Yardım menüsü olmayan dosyayı açıyor
+### 21. ✅ DÜZELTİLDİ — Yardım menüsü olmayan dosyayı açıyor
+> README.md yazıldı.
 - Finder → Yardım → "Liquid" `README.md` açıyor ([bar.py:561](liquid/bar.py:561)); depoda `README.md` yok
   (PLAN.md'de listelenmiş ama yazılmamış).
 
@@ -188,27 +199,27 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
 
 ## ⚪ Düşük / kozmetik
 
-23. **Dock takvim ikonu gece yarısı güncellenmiyor:** gün sayısı yalnızca dock yeniden çizildiğinde
+23. ✅ (Dock `_poll` gün değişince yeniden çiziyor.) **Dock takvim ikonu gece yarısı güncellenmiyor:** gün sayısı yalnızca dock yeniden çizildiğinde
     değişiyor; zamanlayıcı yok ([dock.py:233](liquid/dock.py:233)). Fare dock'a gelene kadar dünün tarihi kalabilir.
 24. **Dock tıklama davranışı macOS'tan farklı:** tek pencereli aktif uygulamanın ikonuna tıklamak
     pencereyi küçültüyor ([dock.py:511](liquid/dock.py:511)); macOS'ta bir şey olmaz.
 25. **Sahte cam:** dock/CC/Spotlight camı yalnızca duvar kâğıdını bulanıklaştırıyor; arkadaki pencereler
     görünmüyor (dock'un arkasına sürüklenen pencere camda yok).
 26. **Bellek:** 6 ayrı Python+GTK süreci ≈ 400 MB RSS (launcher 117 MB, dock 81 MB, spotlight 72 MB, bar 71 MB…).
-27. **`.xprofile` GTK_MODULES'u ikiler:** Mint zaten `appmenu-gtk-module` ekliyor; oturumda
+27. ✅ (`.xprofile` bloğu modül zaten varsa eklemiyor (install yeniden yazar; kullanıcının bloğu güncellendi).) **`.xprofile` GTK_MODULES'u ikiler:** Mint zaten `appmenu-gtk-module` ekliyor; oturumda
     `GTK_MODULES=appmenu-gtk-module:appmenu-gtk-module:gail:atk-bridge`.
 28. **Uzun global menüler** sağdaki saat/simgelerle çakışabilir; menü çubuğunda taşma/kısaltma yok.
 29. **Pencere (`win`) türü dock öğeleri** `.desktop` olmayan uygulamalarda Wnck'nin küçük ikonunu
     54 px'e büyütüyor → bulanık ikon; bu öğeler "Dock'ta Tut" yapılamıyor.
-30. **Çöp dolu/boş algısı** yalnızca `~/.local/share/Trash` — diğer disklerdeki `.Trash-1000` dikkate alınmıyor.
-31. **Dil algılama:** `i18n._lang()` `LANGUAGE`'ı en son kontrol ediyor; gettext'te en önceliklisi o.
-32. **Türkçe arama:** `str.lower()` "İ"yi "i̇" yapıyor; İ ile başlayan uygulama/dosya adları bazen bulunmuyor.
+30. ✅ (Çöp durumu gvfs `trash:///` `item-count` ile (tüm diskler).) **Çöp dolu/boş algısı** yalnızca `~/.local/share/Trash` — diğer disklerdeki `.Trash-1000` dikkate alınmıyor.
+31. ✅ (`LANGUAGE` önce; yerel ayar C/POSIX ise İngilizce.) **Dil algılama:** `i18n._lang()` `LANGUAGE`'ı en son kontrol ediyor; gettext'te en önceliklisi o.
+32. ✅ (`i18n.fold()`: ı/i/I/İ katlanıyor; Uygulamalar ekranı ve Spotlight kullanıyor.) **Türkçe arama:** `str.lower()` "İ"yi "i̇" yapıyor; İ ile başlayan uygulama/dosya adları bazen bulunmuyor.
 33. **Marka riski:** PLAN "Apple adı/markası kullanılmaz" diyor, ama menü çubuğunda elma logosu çiziliyor
     ([glyphs.py:12](liquid/glyphs.py:12)) ve "Bu Mac Hakkında", "Finder", "App Store" adları kullanılıyor.
     Kişisel kullanım için sorun değil; paylaşılacaksa değiştirilmeli.
-34. **Belgeler/depo:** PLAN.md adım 7 (bar) hâlâ `[ ]`; `backup/` `.gitignore`'da — tek geri dönüş kaydı
+34. ✅ (PLAN adım 7 işaretlendi; yedeğin kopyası `~/.local/share/liquid/values.tsv`'de (uninstall onu da kullanır).) **Belgeler/depo:** PLAN.md adım 7 (bar) hâlâ `[ ]`; `backup/` `.gitignore`'da — tek geri dönüş kaydı
     (`values.tsv`) sürüm kontrolünde değil, klasör silinirse geri alma imkânsız.
-35. **`install.sh`** içindeki `xset()` fonksiyonu X11'in `xset` komutunu gölgeliyor (betikte ileride
+35. ✅ (`xset()` → `xfset()`.) **`install.sh`** içindeki `xset()` fonksiyonu X11'in `xset` komutunu gölgeliyor (betikte ileride
     gerçek `xset` gerekirse karışır).
 
 ---

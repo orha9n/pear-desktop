@@ -5,10 +5,14 @@ Cam yüzeyler (dock, widget'lar, Uygulamalar ekranı) arkadaki duvar kâğıdın
 """
 import os
 import subprocess
+import time
 
 import cairo
 
 _cache = {}
+TTL = 4.0                 # xfconf/xrandr sonucu bu kadar saniye önbellekte (saat widget'ı saniyede bir
+_props = (0.0, {})        # çiziliyor, Spotlight her tuşta yeniden boyutlanıyordu → her seferinde 3 süreç)
+_output = (0.0, "0")
 
 
 def _sh(cmd):
@@ -19,22 +23,55 @@ def _sh(cmd):
 
 
 def primary_output():
-    out = _sh(["xrandr"])
+    global _output
+    if time.monotonic() - _output[0] < 30:
+        return _output[1]
+    out = _sh(["xrandr", "--current"])            # --current: yeniden algılama (probe) yapma
+    name = "0"
     for want in (" connected primary", " connected"):
-        for line in out.splitlines():
-            if want in line:
-                return line.split()[0]
-    return "0"
+        name = next((ln.split()[0] for ln in out.splitlines() if want in ln), None)
+        if name:
+            break
+    _output = (time.monotonic(), name or "0")
+    return _output[1]
 
 
-def current(workspace=0):
-    """(resim yolu, stil, değişim zamanı) — stil: 5 yakınlaştır, 3 uzat, diğerleri ≈ kapla."""
+def _desktop_props():
+    """xfce4-desktop kanalının tamamı tek `xfconf-query -lv` çağrısıyla (önbellekli)."""
+    global _props
+    if time.monotonic() - _props[0] < TTL:
+        return _props[1]
+    d = {}
+    for line in _sh(["xfconf-query", "-c", "xfce4-desktop", "-lv"]).splitlines():
+        k, _, v = line.partition(" ")
+        d[k] = v.strip()
+    _props = (time.monotonic(), d)
+    return d
+
+
+def _active_workspace(props):
+    """xfdesktop "tüm çalışma alanlarına uygula" (single-workspace-mode, varsayılan açık) ise o alanın
+    numarası; değilse etkin çalışma alanı."""
+    if props.get("/backdrop/single-workspace-mode", "true") != "false":
+        n = props.get("/backdrop/single-workspace-number", "0")
+        return int(n) if n.isdigit() else 0
+    try:
+        from gi.repository import Gdk
+        return max(0, Gdk.Screen.get_default().get_current_desktop())
+    except Exception:
+        return 0
+
+
+def current(workspace=None):
+    """(resim yolu, stil, değişim zamanı) — stil: 0 yok, 1 ortala, 2 döşe, 3 uzat, 4 sığdır, 5 yakınlaştır."""
+    props = _desktop_props()
+    ws = _active_workspace(props) if workspace is None else workspace
     mon = primary_output()
     for m in (f"monitor{mon}", "monitor0"):
-        base = f"/backdrop/screen0/{m}/workspace{workspace}"
-        p = _sh(["xfconf-query", "-c", "xfce4-desktop", "-p", f"{base}/last-image"])
+        base = f"/backdrop/screen0/{m}/workspace{ws}"
+        p = props.get(f"{base}/last-image", "")
         if p and os.path.exists(p):
-            st = _sh(["xfconf-query", "-c", "xfce4-desktop", "-p", f"{base}/image-style"])
+            st = props.get(f"{base}/image-style", "5")
             try:
                 mt = os.path.getmtime(p)
             except OSError:
@@ -48,13 +85,24 @@ def _screen_image(path, style, mw, mh):
     key = ("img", path, style, mw, mh, os.path.getmtime(path))
     if key in _cache:
         return _cache[key]
-    im = Image.open(path).convert("RGB")
-    iw, ih = im.size
-    if style == 3:
-        im = im.resize((mw, mh), Image.LANCZOS)
-    else:
+    src = Image.open(path).convert("RGB")
+    iw, ih = src.size
+    if style == 3:                                  # uzat
+        im = src.resize((mw, mh), Image.LANCZOS)
+    elif style in (1, 2, 4):                        # ortala / döşe / sığdır: boşluklar siyah
+        im = Image.new("RGB", (mw, mh), (0, 0, 0))
+        if style == 2:
+            for y in range(0, mh, ih):
+                for x in range(0, mw, iw):
+                    im.paste(src, (x, y))
+        else:
+            if style == 4:
+                s = min(mw / iw, mh / ih)
+                src = src.resize((max(1, round(iw * s)), max(1, round(ih * s))), Image.LANCZOS)
+            im.paste(src, ((mw - src.width) // 2, (mh - src.height) // 2))
+    else:                                           # 5 yakınlaştır (ve bilinmeyenler): kapla
         s = max(mw / iw, mh / ih)
-        im = im.resize((max(mw, round(iw * s)), max(mh, round(ih * s))), Image.LANCZOS)
+        im = src.resize((max(mw, round(iw * s)), max(mh, round(ih * s))), Image.LANCZOS)
         x0, y0 = (im.width - mw) // 2, (im.height - mh) // 2
         im = im.crop((x0, y0, x0 + mw, y0 + mh))
     _cache.clear()                     # tek duvar kâğıdı tutulur (bellek)
@@ -73,7 +121,7 @@ def _to_surface(im):
     return cairo.ImageSurface.create_for_data(data, cairo.FORMAT_ARGB32, stride // 4, h, stride)
 
 
-def region(mw, mh, x, y, w, h, blur=28, saturate=1.25, workspace=0):
+def region(mw, mh, x, y, w, h, blur=28, saturate=1.25, workspace=None):
     """Ekrandaki (x, y, w, h) bölgesinin bulanık duvar kâğıdı yüzeyi (yoksa None).
     macOS camı arkayı bulanıklaştırır ve renkleri hafif doygunlaştırır."""
     path, style, mt = current(workspace)
@@ -97,7 +145,7 @@ def region(mw, mh, x, y, w, h, blur=28, saturate=1.25, workspace=0):
     return surf
 
 
-def sharp_region(mw, mh, x, y, w, h, workspace=0):
+def sharp_region(mw, mh, x, y, w, h, workspace=None):
     """Bulanıklaştırılmamış bölge (menü çubuğunun okunabilirlik ölçümü için)."""
     path, style, _ = current(workspace)
     if not path:

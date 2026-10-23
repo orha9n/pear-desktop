@@ -33,7 +33,7 @@ from . import fullscreen  # noqa: E402
 
 CONF = config_path("dock.ini")
 ASSETS = os.path.join(daemon.ROOT, "assets")
-TRASH = os.path.expanduser("~/.local/share/Trash/files")
+TRASH = Gio.File.new_for_uri("trash:///")   # tüm disklerin çöpü (~/.local/share/Trash + /…/.Trash-UID)
 FPS = 16
 CALENDAR_APPS = ("org.gnome.Calendar.desktop", "gnome-calendar.desktop", "thunderbird-calendar.desktop")
 ALWAYS_RUNNING = ("thunar.desktop",)          # macOS'ta Finder hep çalışır → hep nokta
@@ -362,11 +362,17 @@ class Dock(Gtk.Window):
     def _poll(self):
         self._check_wallpaper()
         self._poll_trash()
+        # takvim ikonu gece yarısı yeni güne geçsin (eskiden ancak dock yeniden çizilince değişiyordu)
+        day = GLib.DateTime.new_now_local().get_day_of_month()
+        if day != getattr(self, "_day", day):
+            self.queue_draw()
+        self._day = day
         return True
 
     def _poll_trash(self):
         try:
-            full = any(os.scandir(TRASH))
+            full = TRASH.query_info("trash::item-count", Gio.FileQueryInfoFlags.NONE, None) \
+                .get_attribute_uint32("trash::item-count") > 0
         except Exception:
             full = False
         if full != getattr(self, "_trash_full", None):
@@ -604,8 +610,7 @@ class Dock(Gtk.Window):
             if it.info is not None:
                 add(t("new_window") if it.running else t("open"), lambda: self.launch(it))
                 for a in it.info.list_actions()[:6]:
-                    add(it.info.get_action_name(a), lambda a=a: it.info.launch_action(
-                        a, Gdk.Display.get_default().get_app_launch_context()))
+                    add(it.info.get_action_name(a), lambda a=a: apps.launch_action(it.info, a))
                 m.append(Gtk.SeparatorMenuItem())
                 add(t("remove_from_dock") if it.pinned else t("keep_in_dock"), lambda: self._pin(it, not it.pinned))
             if it.windows:

@@ -11,25 +11,27 @@ set -e
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NO_APT=0; [ "${1:-}" = "--no-apt" ] && NO_APT=1
 BK="$ROOT/backup"; VALS="$BK/values.tsv"
+# yedeğin ikinci kopyası proje klasörünün DIŞINDA (backup/ git'te değil; klasör silinirse geri alma kalsın)
+MIRROR="$HOME/.local/share/liquid/values.tsv"
 say()  { echo -e "\n\033[1;36m>> $*\033[0m"; }
 ok()   { echo -e "   \033[1;32m✓\033[0m $*"; }
 warn() { echo -e "   \033[1;33m!\033[0m $*"; }
 
 case "${XDG_CURRENT_DESKTOP:-}" in *XFCE*) ;; *) echo "!! XFCE oturumu gerekli (şu an: ${XDG_CURRENT_DESKTOP:-?})"; exit 1;; esac
 [ "$(id -u)" = 0 ] && { echo "!! root olarak değil, kendi kullanıcınla çalıştır (sudo gerekirse kendisi sorar)"; exit 1; }
-mkdir -p "$BK"; touch "$VALS"
+mkdir -p "$BK" "$(dirname "$MIRROR")"; touch "$VALS"
 
-# xfconf özelliğini ayarla; İLK değiştirişte eski değeri (ya da yokluğunu) kaydet
-xset() {   # kanal özellik tür değer
-  local ch="$1" p="$2" typ="$3" v="$4" old
+# xfconf özelliğini ayarla; İLK değiştirişte eski değeri (ya da yokluğunu) kaydet.
+# 5. sütun: Liquid'in yazdığı değerin kabuk deseni → uninstall, kullanıcı sonradan değiştirdiyse dokunmaz.
+# (Adı xset değil: X11'in xset komutunu gölgelemesin.)
+xfset() {   # kanal özellik tür değer [desen]
+  local ch="$1" p="$2" typ="$3" v="$4" pat="${5:-$4}" old
   if ! grep -qP "^\Q$ch\E\t\Q$p\E\t" "$VALS" 2>/dev/null; then
-    if old="$(xfconf-query -c "$ch" -p "$p" 2>/dev/null)"; then
-      printf '%s\t%s\t%s\t%s\n' "$ch" "$p" "$typ" "$old" >> "$VALS"
-    else
-      printf '%s\t%s\t%s\t%s\n' "$ch" "$p" "$typ" "__UNSET__" >> "$VALS"
-    fi
+    old="$(xfconf-query -c "$ch" -p "$p" 2>/dev/null)" || old="__UNSET__"
+    printf '%s\t%s\t%s\t%s\t%s\n' "$ch" "$p" "$typ" "$old" "$pat" >> "$VALS"
   fi
   xfconf-query -c "$ch" -p "$p" -t "$typ" -s "$v" --create
+  cp "$VALS" "$MIRROR"
 }
 
 # ---------- 1) paketler ----------
@@ -60,21 +62,21 @@ ok "MacTahoe-Light · MacTahoe ikonları · WhiteSur imleçleri"
 
 # ---------- 3) görünüm ayarları ----------
 say "3/7  Pencere teması, ikonlar, yazı tipi"
-xset xsettings /Net/ThemeName string MacTahoe-Light
-xset xsettings /Net/IconThemeName string MacTahoe
-xset xsettings /Gtk/CursorThemeName string WhiteSur-cursors
-xset xsettings /Gtk/CursorThemeSize int 24
-xset xsettings /Gtk/FontName string "Inter 10"
-xset xsettings /Xft/HintStyle string hintslight
-xset xsettings /Xft/RGBA string rgb
-xset xfwm4 /general/theme string MacTahoe-Light
-xset xfwm4 /general/button_layout string "CHM|"
-xset xfwm4 /general/title_alignment string center
-xset xfwm4 /general/title_font string "Inter Semi-Bold 10"
-xset xfwm4 /general/use_compositing bool true
-xset xfwm4 /general/show_frame_shadow bool true
-xset xfwm4 /general/show_popup_shadow bool true
-xset xfwm4 /general/placement_mode string center
+xfset xsettings /Net/ThemeName string MacTahoe-Light "MacTahoe-*"      # Karanlık Mod: MacTahoe-Dark
+xfset xsettings /Net/IconThemeName string MacTahoe "MacTahoe*"
+xfset xsettings /Gtk/CursorThemeName string WhiteSur-cursors
+xfset xsettings /Gtk/CursorThemeSize int 24
+xfset xsettings /Gtk/FontName string "Inter 10"
+xfset xsettings /Xft/HintStyle string hintslight
+xfset xsettings /Xft/RGBA string rgb
+xfset xfwm4 /general/theme string MacTahoe-Light "MacTahoe-*"
+xfset xfwm4 /general/button_layout string "CHM|"
+xfset xfwm4 /general/title_alignment string center
+xfset xfwm4 /general/title_font string "Inter Semi-Bold 10"
+xfset xfwm4 /general/use_compositing bool true
+xfset xfwm4 /general/show_frame_shadow bool true
+xfset xfwm4 /general/show_popup_shadow bool true
+xfset xfwm4 /general/placement_mode string center
 ok "trafik ışıkları solda, başlık ortada, Inter"
 
 # ---------- 4) duvar kâğıdı ----------
@@ -93,28 +95,31 @@ for mon in $(xrandr | awk '/ connected/{print $1}'); do
 done
 echo "$PROPS" | sort -u | while read -r p; do
   [ -n "$p" ] || continue
-  xset xfce4-desktop "$p" string "$WP"
-  xset xfce4-desktop "${p%/last-image}/image-style" int 5
+  xfset xfce4-desktop "$p" string "$WP"
+  xfset xfce4-desktop "${p%/last-image}/image-style" int 5
 done
 ok "assets/wallpaper/golden-gate.jpg (Levi Clancy, CC BY-SA 4.0)"
 
 # ---------- 5) global menü (GTK uygulamaları menülerini çubuğa versin) ----------
 say "5/7  Global menü"
 XP="$HOME/.xprofile"; touch "$XP"
-if ! grep -q "LIQUID-START" "$XP"; then
-  cat >> "$XP" <<'EOF'
+sed -i '/# LIQUID-START/,/# LIQUID-END/d' "$XP"          # eski sürümün bloğunu yenisiyle değiştir
+cat >> "$XP" <<'EOF'
 # LIQUID-START — GTK uygulamaları menülerini Liquid menü çubuğuna versin
-export GTK_MODULES="${GTK_MODULES:+$GTK_MODULES:}appmenu-gtk-module"
+# (Mint zaten ekliyorsa ikinci kez ekleme: GTK_MODULES=appmenu-gtk-module:appmenu-gtk-module:… oluyordu)
+case ":${GTK_MODULES:-}:" in
+  *:appmenu-gtk-module:*) ;;
+  *) export GTK_MODULES="${GTK_MODULES:+$GTK_MODULES:}appmenu-gtk-module" ;;
+esac
 export UBUNTU_MENUPROXY=1
 # LIQUID-END
 EOF
-fi
 ok "~/.xprofile (oturumu kapatıp açınca etkin)"
 
 # ---------- 6) kısayol + oturum başlangıcı ----------
 say "6/7  ⌘Space → Spotlight, ⌃⌘F → tam ekran, otomatik başlatma"
-xset xfce4-keyboard-shortcuts "/commands/custom/<Super>space" string "$ROOT/bin/liquid toggle spotlight"
-xset xfce4-keyboard-shortcuts "/commands/custom/<Primary><Super>f" string "$ROOT/bin/liquid fullscreen"
+xfset xfce4-keyboard-shortcuts "/commands/custom/<Super>space" string "$ROOT/bin/liquid toggle spotlight"
+xfset xfce4-keyboard-shortcuts "/commands/custom/<Primary><Super>f" string "$ROOT/bin/liquid fullscreen"
 mkdir -p "$HOME/.config/autostart"
 cat > "$HOME/.config/autostart/liquid.desktop" <<EOF
 [Desktop Entry]

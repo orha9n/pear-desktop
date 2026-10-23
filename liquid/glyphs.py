@@ -1,7 +1,6 @@
 """Liquid — menü çubuğu glifleri (tek renk, elle çizilmiş; macOS 26 SF Symbols benzeri)."""
 import math
 import os
-import subprocess
 
 import cairo
 from gi.repository import Gtk
@@ -47,23 +46,6 @@ def battery_state():
     except Exception:
         pass
     return cap, status, ac
-
-
-def wifi_state():
-    """(radyo açık, bağlı SSID, sinyal 0..100)"""
-    def run(cmd):
-        try:
-            return subprocess.run(cmd, capture_output=True, text=True, timeout=3).stdout
-        except Exception:
-            return ""
-    on = run(["nmcli", "radio", "wifi"]).strip().lower().startswith("en")
-    for line in run(["env", "LC_ALL=C.UTF-8", "nmcli", "-t", "-f", "ACTIVE,SSID,SIGNAL", "dev", "wifi",
-                     "list", "--rescan", "no"]).splitlines():
-        a, _, rest = line.partition(":")
-        ssid, _, sig = rest.rpartition(":")
-        if a == "yes" and ssid:
-            return on, ssid.replace("\\:", ":"), int(sig or 0)
-    return on, "", 0
 
 
 class Glyph(Gtk.DrawingArea):

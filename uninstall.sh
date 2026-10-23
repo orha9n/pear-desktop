@@ -6,6 +6,8 @@
 # ============================================================
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VALS="$ROOT/backup/values.tsv"
+MIRROR="$HOME/.local/share/liquid/values.tsv"
+[ -f "$VALS" ] || { [ -f "$MIRROR" ] && VALS="$MIRROR"; }      # proje yedeği yoksa dıştaki kopya
 say() { echo -e "\n\033[1;36m>> $*\033[0m"; }
 
 say "Liquid kapatılıyor"
@@ -16,8 +18,14 @@ sleep 1
 say "Ayarlar geri yükleniyor"
 if [ -f "$VALS" ]; then
   # en son yazılan önce geri alınır (aynı özellik bir kez kaydedilir zaten)
-  tac "$VALS" | while IFS=$'\t' read -r ch p typ old; do
+  tac "$VALS" | while IFS=$'\t' read -r ch p typ old pat; do
     [ -n "$ch" ] || continue
+    # kullanıcı Liquid'den sonra kendisi değiştirdiyse (ör. başka duvar kâğıdı seçtiyse) dokunma
+    if [ -n "$pat" ]; then
+      cur="$(xfconf-query -c "$ch" -p "$p" 2>/dev/null)" || cur=""
+      # shellcheck disable=SC2254
+      case "$cur" in $pat) ;; *) echo "   · $ch $p: sonradan değiştirilmiş ($cur) — korunuyor"; continue ;; esac
+    fi
     if [ "$old" = "__UNSET__" ]; then
       xfconf-query -c "$ch" -p "$p" -r 2>/dev/null
     else
@@ -25,6 +33,7 @@ if [ -f "$VALS" ]; then
     fi
   done
   mv "$VALS" "$VALS.restored-$(date +%Y%m%d-%H%M%S)"
+  rm -f "$MIRROR"
   echo "   ✓ ayarlar önceki değerlerine döndü"
 else
   echo "   ! backup/values.tsv yok — geri yüklenecek ayar kaydı bulunamadı"

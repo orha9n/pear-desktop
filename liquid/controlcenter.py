@@ -110,9 +110,8 @@ def brightness():
     return 100
 
 
-def set_brightness(p):
-    if backlight():
-        run_bg(["brightnessctl", "-q", "set", f"{max(1, p)}%"])
+def brightness_cmds(p):
+    return [["brightnessctl", "-q", "set", f"{max(1, p)}%"]] if backlight() else []
 
 
 def volume():
@@ -120,9 +119,36 @@ def volume():
     return int(m.group(1)) if m else 50
 
 
-def set_volume(p):
-    run_bg(["pactl", "set-sink-mute", "@DEFAULT_SINK@", "0"])
-    run_bg(["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{p}%"])
+def volume_cmds(p):
+    return [["pactl", "set-sink-mute", "@DEFAULT_SINK@", "0"],
+            ["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{p}%"]]
+
+
+class Applier:
+    """Kaydırıcı değerlerini sırayla ve kısarak uygular. Eskiden her fare hareketinde yeni
+    brightnessctl/pactl süreci açılıyordu (saniyede onlarca, sırası belirsiz → değer geri sıçrayabiliyordu).
+    Anahtar başına tek işçi iş parçacığı vardır; işçi her turda yalnızca EN SON istenen değeri uygular."""
+
+    def __init__(self):
+        self.want, self.busy, self.lock = {}, set(), threading.Lock()
+
+    def set(self, key, value):
+        with self.lock:
+            self.want[key] = value
+            if key in self.busy:
+                return                       # çalışan işçi son değeri alacak
+            self.busy.add(key)
+        threading.Thread(target=self._work, args=(key,), daemon=True).start()
+
+    def _work(self, key):
+        while True:
+            with self.lock:
+                if key not in self.want:
+                    self.busy.discard(key)
+                    return
+                v = self.want.pop(key)
+            for cmd in (brightness_cmds if key == "bri" else volume_cmds)(v):
+                run(cmd)
 
 
 def player():
@@ -168,6 +194,7 @@ class ControlCenter(Gtk.Window):
         self.st = {"wifi": (True, ""), "bt": False, "dnd": False, "dark": False, "bri": 100, "vol": 50,
                    "player": ("", "", "", "")}
         self.drag = None           # "bri" | "vol"
+        self.apply = Applier()
         self.regions = []          # (x, y, w, h, eylem)
         self.backdrop = None
         self._shown_at = 0.0
@@ -384,7 +411,7 @@ class ControlCenter(Gtk.Window):
     def _slide(self, key, x, rx, rw):
         v = int(max(0, min(100, (x - self.shadow - rx - 11) / max(1, rw - 22) * 100)))
         self.st[key] = v
-        (set_brightness if key == "bri" else set_volume)(v)
+        self.apply.set(key, v)
         self.queue_draw()
 
     def on_press(self, w, e):
@@ -440,7 +467,7 @@ class ControlCenter(Gtk.Window):
                 (e.direction == Gdk.ScrollDirection.SMOOTH and e.get_scroll_deltas()[2] < 0)
             v = max(0, min(100, self.st[key] + (6 if up else -6)))
             self.st[key] = v
-            (set_brightness if key == "bri" else set_volume)(v)
+            self.apply.set(key, v)
             self.queue_draw()
         return True
 
@@ -449,6 +476,8 @@ def main():
     if not daemon.claim("controlcenter"):
         return
     cc = ControlCenter()
+    # ilk açılışta bulanık arka plan hesabı ~1 sn sürüyordu → boşta önceden hesapla (önbelleğe girer)
+    GLib.idle_add(lambda: (cc._place(), False)[1])
     daemon.on_signal(signal.SIGUSR1, cc.toggle)
     if "--show" in sys.argv:
         GLib.timeout_add(150, lambda: (cc.show_cc(), False)[1])
