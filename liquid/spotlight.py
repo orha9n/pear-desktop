@@ -24,7 +24,7 @@ gi.require_version("Gdk", "3.0")
 gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, Gdk, GLib, Gio, GdkPixbuf, Pango, PangoCairo  # noqa: E402
 
-from .core import design, wallpaper, daemon, apps, screen_geometry  # noqa: E402
+from .core import design, wallpaper, daemon, apps, screen_geometry, restart_on_monitor_change  # noqa: E402
 from .core.i18n import t, fold  # noqa: E402
 
 W = 680
@@ -347,6 +347,7 @@ class Spotlight(Gtk.Window):
 def main():
     if not daemon.claim("spotlight"):
         return
+    restart_on_monitor_change()
     sp = Spotlight()
     GLib.idle_add(lambda: (sp._resize(), False)[1])      # cam arka planını önceden hesapla
     daemon.on_signal(signal.SIGUSR1, sp.toggle)

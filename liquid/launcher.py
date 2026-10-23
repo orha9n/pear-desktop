@@ -20,7 +20,7 @@ gi.require_version("Gdk", "3.0")
 gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, Gdk, GdkPixbuf, Gio, GLib, Pango, PangoCairo  # noqa: E402
 
-from .core import design, wallpaper, daemon, apps, screen_geometry  # noqa: E402
+from .core import design, wallpaper, daemon, apps, screen_geometry, restart_on_monitor_change  # noqa: E402
 from .core.i18n import t, fold  # noqa: E402
 
 COLS, ROWS = 7, 5
@@ -390,6 +390,7 @@ class Launcher(Gtk.Window):
 def main():
     if not daemon.claim("launcher"):
         return
+    restart_on_monitor_change()
     lp = Launcher()
     daemon.on_signal(signal.SIGUSR1, lp.toggle)
     if "--show" in sys.argv:

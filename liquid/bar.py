@@ -30,11 +30,12 @@ gi.require_version("Wnck", "3.0")
 gi.require_version("Dbusmenu", "0.4")
 from gi.repository import Gtk, Gdk, GLib, Gio, Wnck, Dbusmenu, GdkPixbuf  # noqa: E402
 
-from .core import design, wallpaper, daemon, apps, screen_geometry, set_strut  # noqa: E402
+from .core import design, wallpaper, daemon, apps, screen_geometry, set_strut, restart_on_monitor_change  # noqa: E402
 from .core.i18n import t  # noqa: E402
 from . import applemenu, fullscreen  # noqa: E402
 from .glyphs import Glyph, battery_state  # noqa: E402
 from . import wifi  # noqa: E402
+from .tray import Tray  # noqa: E402
 
 H = design.BAR_H
 MODS = {"Control": "⌃", "Shift": "⇧", "Alt": "⌥", "Super": "⌘"}
@@ -276,6 +277,9 @@ class Bar(Gtk.Window):
     min-height: {H - 6}px; min-width: 0; border-radius: 6px; }}
 #lbar button:hover, #lbar button:checked {{ background-color: {hov}; }}
 #lbar button label {{ font-size: {design.BAR_FONT_PX}px; font-weight: 500; color: {fg}; text-shadow: {shadow}; }}
+#lbar .tray {{ border-radius: 6px; min-height: {H - 6}px; }}
+#lbar .tray:hover {{ background-color: {hov}; }}
+#lbar .tray image {{ color: {fg}; -gtk-icon-shadow: {shadow}; }}
 """)
         for g in getattr(self, "glyphs", []):
             g.light = self.light_text
@@ -403,6 +407,10 @@ class Bar(Gtk.Window):
     # ---------- sağ taraf ----------
     def _build_right(self):
         self.glyphs = []
+        # uygulamaların tepsi ikonları (macOS: üçüncü taraf menü çubuğu öğeleri sistem simgelerinin solunda)
+        self.tray = Tray()
+        self.tray.set_valign(Gtk.Align.CENTER)
+        self.right.pack_start(self.tray, False, False, 0)
         if battery_state()[0] is not None:
             self.g_batt = self._glyph_button("battery", 30, self._battery_menu)
         else:
@@ -788,6 +796,7 @@ class Bar(Gtk.Window):
 def main():
     if not daemon.claim("bar"):
         return
+    restart_on_monitor_change()
     b = Bar()
     daemon.on_signal(signal.SIGUSR2, b._toggle_fs)      # ⌃⌘F (liquid fullscreen)
     b.connect("destroy", Gtk.main_quit)

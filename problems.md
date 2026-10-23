@@ -75,7 +75,8 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
 - **Öneri:** Adaylarda yorumlayıcıları (`python3*`, `java`, `node`, `electron`…) atla; WM_CLASS'tan `.py`
   sonekini sil; `/proc/PID/cmdline` içindeki betik adını da aday yap.
 
-### 7. Sistem tepsisi (tray) yok: XFCE paneli zorla ve sürekli kapatılıyor
+### 7. ✅ DÜZELTİLDİ — Sistem tepsisi (tray) yok: XFCE paneli zorla ve sürekli kapatılıyor
+> `liquid/tray.py`: libxapp `XApp.StatusIconMonitor` + Mint'in SNI köprüsü `xapp-sn-watcher` (XFCE'de kendiliğinden çıktığı için yalnız kendi ortamında `XDG_CURRENT_DESKTOP=MATE` ile başlatılıyor). Blueman, Güncelleme Yöneticisi, sistem raporları görünüyor; nm-applet/güç yöneticisi çubuğun kendi simgelerini tekrarlamasın diye gizli. Köprü yokken başlamış SNI uygulamaları (ör. Claude) yeniden açılınca gelir. Eski XEmbed (_NET_SYSTEM_TRAY) ikonları desteklenmiyor.
 - [session.py:61](liquid/session.py:61) her 5 sn'de XFCE paneline SIGTERM gönderiyor; panel elle açılsa da
   kapanır. Yerine bir bildirim alanı (StatusNotifier/XEmbed) yok.
 - **Etkisi:** Tepsi ikonu kullanan uygulamaların (ör. Claude, güncelleme yöneticisi, Bluetooth, klavye düzeni,
@@ -104,7 +105,8 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
 - **Öneri:** Menü dışa aktarmayan uygulamalar için en azından standart yedek menüler (Dosya: Yeni Pencere,
   Kapat; Pencere: Küçült/Büyüt; Yardım) göster; registrar'ı bar sürecinin içinde ya da kalıcı başlat.
 
-### 10. GTK4/libadwaita uygulamaları temaya uymuyor
+### 10. ✅ DÜZELTİLDİ — GTK4/libadwaita uygulamaları temaya uymuyor
+> install.sh MacTahoe'nun gtk-4.0 SCSS'ini `sassc` ile `~/.config/gtk-4.0`'a derliyor (MacTahoe betiği çalıştırılmadan; `.liquid` işaretiyle, uninstall geri alır); Karanlık Mod `gtk.css` bağlantısını değiştiriyor. Bu sistemde kuruldu; GTK4 uygulamalarında GÖRSEL OLARAK DOĞRULANMADI (GTK4 Python bağlaması / sanal ekran yok).
 - `~/.config/gtk-4.0` yok. Dock'taki **Takvim** ve **Hesap Makinesi** (GTK4) Mint/Adwaita görünümünde
   açılıyor: turkuaz vurgu, farklı pencere düğmeleri (ekran görüntüsünde doğrulandı).
 - **Öneri:** MacTahoe kurulumunda libadwaita/GTK4 seçeneğini (`-l`) kullan ya da `gtk-4.0/gtk.css`'i bağla
@@ -196,7 +198,8 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
 - Finder → Yardım → "Liquid" `README.md` açıyor ([bar.py:561](liquid/bar.py:561)); depoda `README.md` yok
   (PLAN.md'de listelenmiş ama yazılmamış).
 
-### 22. Çoklu monitör desteklenmiyor
+### 22. ◐ KISMEN — Çoklu monitör desteklenmiyor
+> Monitör eklenince/çıkarılınca ya da çözünürlük değişince bileşenler yeni boyutla yeniden açılıyor (benzetimle test edildi). İkinci monitörde menü çubuğu HENÜZ YOK; tek monitörlü sistemde test edilemiyor.
 - Bar, dock, widget'lar, Spotlight, CC yalnızca birincil monitörde (`screen_geometry()`); ikinci monitörde
   menü çubuğu/dock yok. Monitör takılıp çıkarılınca boyutlar yeniden hesaplanmıyor (yeniden başlatma gerekir).
 

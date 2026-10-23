@@ -58,7 +58,26 @@ fi
 if [ ! -d "$HOME/.local/share/icons/WhiteSur-cursors" ]; then
   clone WhiteSur-cursors && cp -r "$TMP/WhiteSur-cursors/dist" "$HOME/.local/share/icons/WhiteSur-cursors"
 fi
-ok "MacTahoe-Light · MacTahoe ikonları · WhiteSur imleçleri"
+# GTK4/libadwaita uygulamaları (Takvim, Hesap Makinesi…) ~/.config/gtk-4.0/gtk.css'i okur. MacTahoe'nun
+# kendi betiğini çalıştırmadan (o ~/.themes'e de kurup uygulama ekliyor) yalnız gtk-4.0 stilleri derlenir.
+G4="$HOME/.config/gtk-4.0"
+if [ ! -f "$G4/.liquid" ]; then
+  if [ -e "$G4/gtk.css" ] && [ ! -e "$BK/gtk-4.0.orig" ]; then cp -a "$G4" "$BK/gtk-4.0.orig"; fi
+  [ -d "$TMP/MacTahoe-gtk-theme" ] || clone MacTahoe-gtk-theme
+  SRC="$TMP/MacTahoe-gtk-theme/src"
+  cp "$SRC/sass/_theme-options.scss" "$SRC/sass/_theme-options-temp.scss"
+  cp "$SRC/sass/_gtk-base.scss" "$SRC/sass/_gtk-base-temp.scss"
+  mkdir -p "$G4"
+  rm -rf "$G4/"{gtk.css,gtk-dark.css,gtk-Light.css,gtk-Dark.css,assets,windows-assets}
+  sassc -t expanded "$SRC/main/gtk-4.0/gtk-Light.scss" "$G4/gtk-Light.css"
+  sassc -t expanded "$SRC/main/gtk-4.0/gtk-Dark.scss" "$G4/gtk-Dark.css"
+  ln -sf gtk-Light.css "$G4/gtk.css"; ln -sf gtk-Dark.css "$G4/gtk-dark.css"
+  cp -r "$SRC/assets/gtk/common-assets/assets" "$G4/"
+  cp -r "$SRC/assets/gtk/scalable" "$G4/assets/"
+  cp -r "$SRC/assets/gtk/windows-assets/titlebutton" "$G4/windows-assets"
+  touch "$G4/.liquid"
+fi
+ok "MacTahoe-Light · MacTahoe ikonları · WhiteSur imleçleri · GTK4 (~/.config/gtk-4.0)"
 
 # ---------- 3) görünüm ayarları ----------
 say "3/7  Pencere teması, ikonlar, yazı tipi"

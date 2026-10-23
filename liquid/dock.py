@@ -27,7 +27,7 @@ gi.require_version("Wnck", "3.0")
 gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, Gdk, GdkPixbuf, Gio, GLib, Wnck, Pango, PangoCairo  # noqa: E402
 
-from .core import design, wallpaper, daemon, apps, config_path, screen_geometry, set_strut  # noqa: E402
+from .core import design, wallpaper, daemon, apps, config_path, screen_geometry, set_strut, restart_on_monitor_change  # noqa: E402
 from .core.i18n import t  # noqa: E402
 from . import fullscreen  # noqa: E402
 
@@ -662,6 +662,7 @@ class Dock(Gtk.Window):
 def main():
     if not daemon.claim("dock"):
         return
+    restart_on_monitor_change()
     from .applemenu import install_css
     install_css("menu")
     d = Dock()

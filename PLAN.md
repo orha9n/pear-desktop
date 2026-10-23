@@ -217,3 +217,10 @@ macbook/
   bundan sonra doğrulama ekran dışı (birim test, kuru çalıştırma, süreç sayımı) ya da kullanıcıya sorarak.
 - 21:3x — problems.md 2. grup düzeltildi (4, 5, 9, 13, 20, 24, 28, 29). Karanlık Mod paleti `core/design.py`'de;
   yeni renk yazarken sabit (0,0,0,a) yerine `design.ink(a)` vb. kullan (gölge/karartma hariç).
+- 21:4x — problems.md 3. grup: tepsi (XApp monitör + xapp-sn-watcher, MATE ortamıyla), GTK4 teması
+  (~/.config/gtk-4.0, sassc), monitör değişince yeniden başlatma. İkinci monitör çubuğu açık.
+## 5f. Yeni tuzaklar
+- xapp-sn-watcher yalnız org.x.apps.statusicon status-notifier-enabled-desktops (MATE, Cinnamon) içinde
+  çalışır, XFCE'de sessizce çıkar → ayarı değiştirme, süreç ortamında XDG_CURRENT_DESKTOP=MATE.
+- MacTahoe SCSS'i derlemek için önce _theme-options-temp.scss ve _gtk-base-temp.scss kopyaları gerekir.
+- GObject.BindingFlags (GLib.BindingFlags DEĞİL).

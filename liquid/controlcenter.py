@@ -27,7 +27,7 @@ gi.require_version("Gdk", "3.0")
 gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, Gdk, GLib, Pango, PangoCairo  # noqa: E402
 
-from .core import design, wallpaper, daemon, screen_geometry  # noqa: E402
+from .core import design, wallpaper, daemon, screen_geometry, restart_on_monitor_change  # noqa: E402
 from .core.i18n import t  # noqa: E402
 
 W = 330
@@ -86,7 +86,21 @@ def dark():
     return "Dark" in run(["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName"])
 
 
+def _gtk4_dark(on):
+    """install.sh'nin kurduğu GTK4 stilinde de açık/koyu (GTK4 uygulamaları açılışta okur)."""
+    g4 = os.path.expanduser("~/.config/gtk-4.0")
+    if not os.path.exists(os.path.join(g4, ".liquid")):
+        return
+    link = os.path.join(g4, "gtk.css")
+    try:
+        os.remove(link)
+    except OSError:
+        pass
+    os.symlink("gtk-Dark.css" if on else "gtk-Light.css", link)
+
+
 def set_dark(on):
+    _gtk4_dark(on)
     run_bg(["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName", "-s", "MacTahoe-Dark" if on else "MacTahoe-Light"])
     run_bg(["xfconf-query", "-c", "xfwm4", "-p", "/general/theme", "-s", "MacTahoe-Dark" if on else "MacTahoe-Light"])
     run_bg(["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName", "-s", "MacTahoe-dark" if on else "MacTahoe"])
@@ -476,6 +490,7 @@ class ControlCenter(Gtk.Window):
 def main():
     if not daemon.claim("controlcenter"):
         return
+    restart_on_monitor_change()
     cc = ControlCenter()
     design.on_theme_change(cc.queue_draw)
     # ilk açılışta bulanık arka plan hesabı ~1 sn sürüyordu → boşta önceden hesapla (önbelleğe girer)

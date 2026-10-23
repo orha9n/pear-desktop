@@ -39,6 +39,14 @@ else
   echo "   ! backup/values.tsv yok — geri yüklenecek ayar kaydı bulunamadı"
 fi
 
+G4="$HOME/.config/gtk-4.0"                      # install.sh'nin GTK4 stilleri (işaret dosyasıyla)
+if [ -f "$G4/.liquid" ]; then
+  rm -rf "$G4/"{gtk.css,gtk-dark.css,gtk-Light.css,gtk-Dark.css,assets,windows-assets,.liquid}
+  [ -d "$ROOT/backup/gtk-4.0.orig" ] && cp -a "$ROOT/backup/gtk-4.0.orig/." "$G4/"
+  rmdir "$G4" 2>/dev/null
+  echo "   ✓ GTK4 teması kaldırıldı"
+fi
+
 XP="$HOME/.xprofile"
 [ -f "$XP" ] && sed -i '/# LIQUID-START/,/# LIQUID-END/d' "$XP" && echo "   ✓ ~/.xprofile temizlendi"
 

@@ -22,7 +22,7 @@ gi.require_version("Gdk", "3.0")
 gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, Gdk, GdkPixbuf, GLib, Pango, PangoCairo  # noqa: E402
 
-from .core import design, wallpaper, daemon, config_path, screen_geometry  # noqa: E402
+from .core import design, wallpaper, daemon, config_path, screen_geometry, restart_on_monitor_change  # noqa: E402
 from .core.i18n import t, LANG  # noqa: E402
 
 CONF = config_path("widgets.ini")
@@ -427,6 +427,7 @@ class Gallery(Gtk.Window):
 def main():
     if not daemon.claim("widgets"):
         return
+    restart_on_monitor_change()
     from .applemenu import install_css
     install_css("menu")
     cp = conf()
