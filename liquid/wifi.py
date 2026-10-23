@@ -9,7 +9,10 @@ import re
 import subprocess
 import threading
 
-from gi.repository import Gtk, Gdk, GLib, Gio
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gtk, Gdk, GLib, Gio  # noqa: E402
 
 from .core.i18n import t
 

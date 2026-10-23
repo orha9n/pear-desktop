@@ -16,7 +16,6 @@ import math
 import os
 import signal
 import subprocess
-import sys
 import time
 
 import cairo
@@ -107,9 +106,15 @@ class DockGlass(Gtk.Window):
         if vis:
             self.set_visual(vis)
         self.connect("draw", self._clear)
-        self.connect("map-event", lambda *_: (self.restack(), self.dock._sync_glass(), False)[2])
+        self.connect("map-event", self._mapped)
         self.set_size_request(dock.mw, dock.BG_H)
         self.move(dock.mx, dock.my + dock.mh - design.DOCK_BOTTOM - dock.BG_H)      # dock camıyla aynı satır
+
+    def _mapped(self, *_):
+        self.get_window().input_shape_combine_region(cairo.Region(), 0, 0)    # tıklamalar hep dock'a
+        self.restack()
+        self.dock._sync_glass()
+        return False
 
     @staticmethod
     def _clear(w, cr):
@@ -133,8 +138,10 @@ class DockGlass(Gtk.Window):
             self._key = key
             gw.shape_combine_region(compositor._rounded_region(key[0], 0, key[1], self.dock.BG_H, key[2]), 0, 0)
         if getattr(self, "_hidden", None) != hidden:
+            # tam ekranda dock gizliyken: picom saydamlığı 0 olan pencerenin arkasını da bulanıklaştırıyor
+            # (ekranın altında bulanık şerit kalıyordu) → haritadan kaldır; strut'ı yok, çalışma alanı değişmez
             self._hidden = hidden
-            fullscreen.set_hidden(self, hidden, cairo.Region())        # tıklamalar hep dock'a
+            self.hide() if hidden else self.show()
 
 
 class Dock(Gtk.Window):

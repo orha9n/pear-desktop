@@ -347,6 +347,8 @@ class Gallery(Gtk.Window):
         self.classes, self.live = classes, live           # kind -> sınıf, kind -> açık pencere
         self.set_name("lcard")
         self.set_title("Liquid Widgets")
+        from . import compositor
+        compositor.mark(self)
         self.set_decorated(False)
         self.set_resizable(False)
         self.set_skip_taskbar_hint(True)

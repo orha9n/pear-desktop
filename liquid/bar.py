@@ -14,7 +14,6 @@ import os
 import re
 import signal
 import subprocess
-import sys
 import threading
 
 # appmenu-gtk-module bu süreçteki Gtk.MenuBar'ı global menüye taşıyıp GİZLER → kapat (Gtk'den önce)
@@ -28,7 +27,7 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 gi.require_version("Wnck", "3.0")
 gi.require_version("Dbusmenu", "0.4")
-from gi.repository import Gtk, Gdk, GLib, Gio, Wnck, Dbusmenu, GdkPixbuf  # noqa: E402
+from gi.repository import Gtk, Gdk, GLib, Gio, Wnck, Dbusmenu  # noqa: E402
 
 from .core import design, wallpaper, daemon, apps, screen_geometry, set_strut, restart_on_monitor_change  # noqa: E402
 from .core.i18n import t  # noqa: E402
@@ -500,10 +499,18 @@ class Bar(Gtk.Window):
     def _is_ours(self, w):
         if w is None:
             return False
-        if w.get_pid() == os.getpid():
+        pid = w.get_pid()
+        if pid == os.getpid():
             return True
-        cl = (w.get_class_group_name() or "").lower() + " " + (w.get_name() or "").lower()
-        return "liquid" in cl or "xfce4-notifyd" in cl
+        # Liquid bileşeni mi: başlıkta "liquid" aramak yanlıştı (VS Code'da "bar.py - liquid - …",
+        # tarayıcıda "Liquid Glass …" sekmesi kullanıcı penceresi sayılmıyordu) → süreç komut satırı
+        try:
+            with open(f"/proc/{pid}/cmdline", "rb") as f:
+                if b"-m\0liquid." in f.read():
+                    return True
+        except OSError:
+            pass
+        return "xfce4-notifyd" in (w.get_class_group_name() or "").lower()
 
     def on_active(self):
         w = self.wnck.get_active_window()

@@ -10,8 +10,12 @@ import re
 import shutil
 import subprocess
 
-from gi.repository import Gtk, Gdk, GLib
+import gi
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gtk, Gdk, GLib  # noqa: E402
 
+from . import compositor
 from .core import design
 from .core.i18n import t
 
@@ -169,6 +173,7 @@ def _card_window(width):
     w = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
     w.set_name("lcard")
     w.set_title("Liquid")
+    compositor.mark(w)
     w.set_decorated(False)
     w.set_resizable(False)
     w.set_keep_above(True)
@@ -186,13 +191,16 @@ def _card_window(width):
 
 def _card_bg(wd, cr):
     """app_paintable pencerede GTK arka planı çizmez (CSS'teki #lcard rengi görünmüyordu, kart
-    saydamdı) → köşeleri saydam bırakıp kartı kendimiz çiziyoruz; çocuklar üstüne çizilir."""
+    saydamdı) → köşeleri saydam bırakıp kartı kendimiz çiziyoruz; çocuklar üstüne çizilir.
+    picom açıkken kart gerçek cam olur (arkası bulanık, ton daha saydam); değilse neredeyse opak."""
     cr.set_operator(0)                                  # CLEAR
     cr.paint()
     cr.set_operator(2)                                  # OVER
     w, h = wd.get_allocated_width(), wd.get_allocated_height()
+    real = compositor.active()
+    compositor.shape(wd, 0, 0, w, h, 22)
     design.rrect(cr, 0.5, 0.5, w - 1, h - 1, 22)
-    cr.set_source_rgba(*design.surface(0.97))
+    cr.set_source_rgba(*design.surface(0.80 if real else 0.97))
     cr.fill_preserve()
     cr.set_source_rgba(*design.ink(0.08 if not design.dark() else 0.14))
     cr.set_line_width(1)

@@ -10,7 +10,6 @@ Menü çubuğundaki CC glifine tıklayınca (SIGUSR1) sağ üstte açılır; dı
 
 Çalıştırma: python3 -m liquid.controlcenter [--show]
 """
-import math
 import os
 import re
 import signal
@@ -371,7 +370,11 @@ class ControlCenter(Gtk.Window):
             fw = sh + (sl - sh) * max(0, min(100, val)) / 100
             design.rrect(cr, sx, sy, fw, sh, sh / 2)
             cr.set_source_rgba(1, 1, 1, 1)
-            cr.fill()
+            cr.fill_preserve()
+            # gerçek camın arkası beyaz pencereyken beyaz dolgu zeminde kayboluyordu → ince kenar
+            cr.set_source_rgba(*design.ink(0.10))
+            cr.set_line_width(1)
+            cr.stroke()
             self._icon(cr, icon, sx + 5, sy + 3, 16, (0.35, 0.35, 0.38, 1))
             design.circle(cr, sx + fw - sh / 2, sy + sh / 2, sh / 2 - 0.5)
             cr.set_source_rgba(1, 1, 1, 1)

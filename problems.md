@@ -238,3 +238,17 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
 3. Uygulama eşleme (6), log yönlendirme (8), alt süreç fırtınası (12, 16).
 4. Tepsi (7), global menü yedekleri (9), GTK4 teması (10).
 5. Kalan orta/düşük maddeler.
+
+## Kontrol turu (23 Eki, picom sonrası) — bulunan ve düzeltilenler
+- ✅ **Menü çubuğu adında "liquid" geçen her pencereyi kendi penceresi sanıyordu** ([bar.py](liquid/bar.py) `_is_ours`):
+  VS Code'da bu proje ("bar.py - liquid - …") ya da "Liquid Glass" başlıklı bir sekme açıkken global menü
+  ve ⌃⌘F/yeşil düğme tam ekranı çalışmıyordu. Artık süreç komut satırına (`-m liquid.`) bakılıyor.
+- ✅ **Tam ekranda dock'un cam penceresi bulanık bir şerit bırakıyordu:** picom saydamlığı 0 olan pencerenin
+  arkasını da bulanıklaştırıyor → cam penceresi tam ekranda haritadan kaldırılıyor. Test penceresiyle doğrulandı.
+- ✅ **Kartlar (Widget galerisi, Çöp onayı, Wi-Fi parolası) %97 opaktı:** arkadaki yazı bulanıklaşmadan
+  sızıyordu → picom açıkken gerçek cam.
+- ✅ **Control Center kaydırıcısı:** arkada beyaz pencere varken beyaz dolgu kayboluyordu → ince kenar.
+- ✅ Beş modül GTK sürümü belirtmeden içe aktarıyordu (GTK4 bağları kurulursa yanlış sürüm yüklenebilirdi);
+  kullanılmayan içe aktarmalar temizlendi. pyflakes temiz.
+- Doğrulanamayan: tam ekranda fare ekranın altına inince dock'un belirmesi (fare kullanılmadan test edilemez).
+
