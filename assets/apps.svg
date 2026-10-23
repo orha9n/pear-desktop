@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Liquid — "Uygulamalar" ikonu (macOS 26'daki Apps/Launchpad karşılığı), özgün çizim -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e4e4ea"/>
+    </linearGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff6b5f"/><stop offset="1" stop-color="#f23b3b"/></linearGradient>
+    <linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb84a"/><stop offset="1" stop-color="#ff8c00"/></linearGradient>
+    <linearGradient id="c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe46e"/><stop offset="1" stop-color="#f6c600"/></linearGradient>
+    <linearGradient id="d" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fe585"/><stop offset="1" stop-color="#30c85a"/></linearGradient>
+    <linearGradient id="e" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#63d6f6"/><stop offset="1" stop-color="#1aaee8"/></linearGradient>
+    <linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5daaff"/><stop offset="1" stop-color="#0a6cff"/></linearGradient>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b48cff"/><stop offset="1" stop-color="#7a4bff"/></linearGradient>
+    <linearGradient id="h" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7fbd"/><stop offset="1" stop-color="#ff3c8f"/></linearGradient>
+    <linearGradient id="i" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b3b3bb"/><stop offset="1" stop-color="#83838d"/></linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="27" fill="url(#bg)"/>
+  <rect x="8.5" y="8.5" width="111" height="111" rx="26.5" fill="none" stroke="#000" stroke-opacity="0.08"/>
+  <g>
+    <rect x="25" y="25" width="22" height="22" rx="6.5" fill="url(#a)"/>
+    <rect x="53" y="25" width="22" height="22" rx="6.5" fill="url(#b)"/>
+    <rect x="81" y="25" width="22" height="22" rx="6.5" fill="url(#c)"/>
+    <rect x="25" y="53" width="22" height="22" rx="6.5" fill="url(#d)"/>
+    <rect x="53" y="53" width="22" height="22" rx="6.5" fill="url(#e)"/>
+    <rect x="81" y="53" width="22" height="22" rx="6.5" fill="url(#f)"/>
+    <rect x="25" y="81" width="22" height="22" rx="6.5" fill="url(#g)"/>
+    <rect x="53" y="81" width="22" height="22" rx="6.5" fill="url(#h)"/>
+    <rect x="81" y="81" width="22" height="22" rx="6.5" fill="url(#i)"/>
+  </g>
+  <rect x="8" y="8" width="112" height="56" rx="27" fill="url(#gloss)" opacity="0.5"/>
+</svg>

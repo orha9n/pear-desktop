@@ -64,8 +64,8 @@ macbook/
 5. [x] Bağımlılıkları kur (apt — sudo parolasını kullanıcı terminalde girer)
 6. [x] MacTahoe GTK + ikonlar + imleç + Inter + duvar kâğıdı (indir, `~/.themes`, `~/.local/share/icons`)
 7. [ ] `bar.py` — saydam menü çubuğu (PNG ile ölçerek karşılaştır)
-8. [ ] `dock.py` — Liquid Glass dock
-9. [ ] `widgets.py` — takvim, analog saat, fotoğraf
+8. [x] `dock.py` — Liquid Glass dock (önizlemede MacTahoe ikonlarıyla doğrulandı)
+9. [x] `widgets.py` — takvim, analog saat, fotoğraf (önizlemede doğrulandı)
 10. [ ] `apps.py` — Uygulamalar ızgarası
 11. [ ] `controlcenter.py`, `spotlight.py`
 12. [ ] `session.py` + autostart + `install.sh` / `uninstall.sh` (orijinal ayar yedeği!)
@@ -105,6 +105,10 @@ macbook/
   Müzik=Rhythmbox, Ayarlar=XFCE Ayarlar Yöneticisi, App Store=mintinstall, Terminal=xfce4-terminal.
   Kurulu olmayanlar dock'a konmaz.
 
+## 6b. Kullanıcıya sorulacaklar (sona bırakıldı)
+- Masaüstü klasör simgeleri widget'ların arkasında kalıyor; hedefte masaüstü simgesi yok →
+  gizlensin mi (xfdesktop `/desktop-icons/style 0`), yoksa widget'lar başka yere mi?
+
 ## 7. Durum
 - Şu an: adım 5–6. Masaüstü: kullanıcının orijinal XFCE düzeni (alt panel, Mint-L-Teal,
   Robu-Light). Cupertino tamamen kaldırıldı; Cupertino'nun 33 apt paketi 16:06'da **kaldırıldı**
@@ -124,3 +128,6 @@ macbook/
 - 16:2x — core/ (design, wallpaper, daemon, apps, i18n), bar.py, glyphs.py, applemenu.py yazıldı;
   bar ekranda test edildi: saydam + beyaz yazı + "Claude Dosya Düzen…" + pil/wifi/arama/CC/saat.
 - MacTahoe GTK betiği sudo'suz kullanıcı modunda hata gizleyip duruyordu → root ile kuruldu.
+- dock.py: önizleme (tools/preview.py dock) — MacTahoe ikonları, cam gövde, ayraç, İndirilenler, Çöp OK.
+  Not: Takvim ikonu "Tue" İngilizce (ikonun kendisi), Hesap Makinesi ikonu biraz büyük görünüyor.
+- widgets.py: takvim/saat/fotoğraf önizlemede hedefe yakın. Fotoğraf: NOAA kamu malı (assets/widgets).
