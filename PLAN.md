@@ -107,9 +107,10 @@ macbook/
   Kurulu olmayanlar dock'a konmaz.
 
 ## 6b. Kullanıcı kararları
-- Masaüstü simgeleri: **kalsın** ("macOS'ta klasörler her yerde olabilir"). macOS gibi sağ üstten
-  dizilsin → `xfce4-desktop /desktop-icons/gravity = 2` (install.sh'de, values.tsv ile geri alınır).
-  Simgeler serbestçe sürüklenebilir. Gizleme YOK.
+- Masaüstü simgeleri: **kalsın, kullanıcı nereye koyduysa orada** ("macOS'ta klasörler her yerde
+  olabilir", "sağ üstten dizmek diye bir şey yok"). Simgeleri ASLA otomatik dizme/taşıma
+  (`xfdesktop --arrange`, gravity YOK). 16:42'de yanlışlıkla dizdim → orijinal row/col'ler
+  icons.screen0-1904x1015.rc'den geri yüklendi (16:44).
 
 ## 7. Durum
 - Şu an: adım 5–6. Masaüstü: kullanıcının orijinal XFCE düzeni (alt panel, Mint-L-Teal,
@@ -143,7 +144,8 @@ macbook/
   düşürüyordu → launcher artık DIALOG tipi + ekran boyutu (fullscreen yok); hepsine show sonrası
   set_keep_above + raise. Doğrulandı.
 
-- 16:43 — Masaüstü simgeleri sağ üste dizildi (gravity 2 + xfdesktop --arrange).
+- 16:43 — HATA: simgeleri sağ üste dizdim; kullanıcı istemedi → 16:44 orijinal konumlar geri yüklendi,
+  gravity ayarı kaldırıldı, install.sh'den çıkarıldı.
 - Açık noktalar: masaüstü simge etiketleri açık gökyüzünde zor okunuyor (xfdesktop yazısına gölge
   için kullanıcının gtk.css'ine dokunmak gerekir → sorulmadan YAPMA); global menüler için oturumu
   kapatıp açmak gerekiyor; GTK uygulama pencerelerinin trafik ışıkları ekranda henüz gözle doğrulanmadı.

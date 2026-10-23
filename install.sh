@@ -92,11 +92,6 @@ echo "$PROPS" | sort -u | while read -r p; do
   xset xfce4-desktop "${p%/last-image}/image-style" int 5
 done
 ok "assets/wallpaper/golden-gate.jpg (Levi Clancy, CC BY-SA 4.0)"
-# masaüstü simgeleri macOS gibi SAĞ ÜSTTEN dizilsin (widget'lar solda; simgeler serbestçe taşınabilir)
-# gravity bitleri: 1=yatay, 2=sağdan, 4=alttan → 2 = sağ üst, dikey
-xset xfce4-desktop /desktop-icons/gravity int 2
-xfdesktop --arrange >/dev/null 2>&1 || true
-ok "masaüstü simgeleri sağ üstten (macOS gibi)"
 
 # ---------- 5) global menü (GTK uygulamaları menülerini çubuğa versin) ----------
 say "5/7  Global menü"
