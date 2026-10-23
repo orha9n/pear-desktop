@@ -333,7 +333,7 @@ class TitleStrip(Gtk.Window):
     def _draw(self, w, cr):
         W, H = self.mw, self.H
         cr.set_operator(cairo.OPERATOR_SOURCE)
-        cr.set_source_rgba(0.93, 0.93, 0.94, 0.96)
+        cr.set_source_rgba(*design.surface(0.96))
         cr.paint()
         cr.set_operator(cairo.OPERATOR_OVER)
         cr.rectangle(0, H - 1, W, 1)
@@ -368,7 +368,7 @@ class TitleStrip(Gtk.Window):
         lay.set_text(self.title, -1)
         tw, th = lay.get_pixel_size()
         cr.move_to((W - tw) / 2, (H - th) / 2)
-        cr.set_source_rgba(0, 0, 0, 0.70)
+        cr.set_source_rgba(*design.ink(0.70))
         PangoCairo.show_layout(cr, lay)
         return True
 

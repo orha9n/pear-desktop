@@ -114,11 +114,16 @@ class Spotlight(Gtk.Window):
         self.mx, self.my, self.mw, self.mh = screen_geometry()
         self.sh = 18
         css = Gtk.CssProvider()
-        css.load_from_data(f"""
-#lspot entry {{ background: none; border: none; box-shadow: none; color: rgba(0,0,0,0.88);
+
+        def load_css():
+            fg = "rgba(255,255,255,0.92)" if design.dark() else "rgba(0,0,0,0.88)"
+            css.load_from_data(f"""
+#lspot entry {{ background: none; border: none; box-shadow: none; color: {fg};
     font-family: "SF Pro Display","{design.FONT}",sans-serif; font-size: 22px; font-weight: 400;
     padding: 0; caret-color: rgba(10,132,255,1); }}
 """.encode())
+        load_css()
+        design.on_theme_change(lambda: (load_css(), self.area.queue_draw()))
         Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), css,
                                                  Gtk.STYLE_PROVIDER_PRIORITY_USER + 20)
         ov = Gtk.Overlay()
@@ -299,11 +304,12 @@ class Spotlight(Gtk.Window):
         cr.set_operator(cairo.OPERATOR_OVER)
         cr.translate(self.sh, self.sh)
         r = BAR / 2 if not self.results else 24
-        design.liquid_glass(cr, 0, 0, W, self.H, r, backdrop=self.backdrop, tint=(1, 1, 1, 0.55))
+        design.liquid_glass(cr, 0, 0, W, self.H, r, backdrop=self.backdrop, tint=design.glass_tint(0.55),
+                            dark=design.dark())
         # büyüteç
         cr.set_line_width(2.2)
         cr.arc(30, BAR / 2 - 2, 8, 0, 6.2832)
-        cr.set_source_rgba(0, 0, 0, 0.55)
+        cr.set_source_rgba(*design.ink(0.55))
         cr.stroke()
         cr.set_line_cap(cairo.LINE_CAP_ROUND)
         cr.move_to(36, BAR / 2 + 4)
@@ -312,7 +318,7 @@ class Spotlight(Gtk.Window):
         if not self.results:
             return True
         cr.rectangle(16, BAR, W - 32, 1)
-        cr.set_source_rgba(0, 0, 0, 0.08)
+        cr.set_source_rgba(*design.ink(0.08))
         cr.fill()
         for i, (kind, title, sub, icon, _) in enumerate(self.results[:MAXROWS]):
             y = BAR + 8 + i * ROW
@@ -324,8 +330,8 @@ class Spotlight(Gtk.Window):
             if s:
                 cr.set_source_surface(s, 20, y + (ROW - 2 - 30) / 2)
                 cr.paint()
-            fg = (1, 1, 1, 1) if i == self.sel else (0, 0, 0, 0.88)
-            sb = (1, 1, 1, 0.8) if i == self.sel else (0, 0, 0, 0.5)
+            fg = (1, 1, 1, 1) if i == self.sel else design.ink(0.88)
+            sb = (1, 1, 1, 0.8) if i == self.sel else design.ink(0.5)
             for txt, yy, sz, wt, col in ((title, y + 5, 10.5, "Semi-Bold", fg), (sub, y + 24, 8.5, "Regular", sb)):
                 lay = PangoCairo.create_layout(cr)
                 lay.set_font_description(Pango.FontDescription(f"{design.FONT} {wt} {sz}"))

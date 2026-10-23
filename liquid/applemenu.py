@@ -15,25 +15,67 @@ from gi.repository import Gtk, Gdk, GLib
 from .core import design
 from .core.i18n import t
 
-MENU_CSS = f"""
-menu, .menu, .context-menu {{ background-color: rgba(246,246,248,0.94); border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.10); padding: 5px; box-shadow: none; }}
-menu menuitem {{ padding: 4px 10px; min-height: 18px; border-radius: 7px; color: rgba(0,0,0,0.88);
+def menu_css():
+    """Bu süreçteki tüm Gtk.Menu'lerin macOS 26 görünümü (açık / koyu)."""
+    d = design.dark()
+    bg, line, fg = ("rgba(40,40,43,0.95)", "rgba(255,255,255,0.12)", "255,255,255") if d else \
+        ("rgba(246,246,248,0.94)", "rgba(0,0,0,0.10)", "0,0,0")
+    return f"""
+menu, .menu, .context-menu {{ background-color: {bg}; border-radius: 12px;
+    border: 1px solid {line}; padding: 5px; box-shadow: none; }}
+menu menuitem {{ padding: 4px 10px; min-height: 18px; border-radius: 7px; color: rgba({fg},0.88);
     font-family: "SF Pro Text", "{design.FONT}", sans-serif; font-size: 13px; }}
-menu menuitem label {{ color: rgba(0,0,0,0.88); }}
-menu menuitem .accel {{ color: rgba(0,0,0,0.38); }}
+menu menuitem label {{ color: rgba({fg},0.88); }}
+menu menuitem .accel {{ color: rgba({fg},0.38); }}
 menu menuitem:hover, menu menuitem:selected {{ background-color: rgba(10,130,255,0.95); }}
 menu menuitem:hover label, menu menuitem:selected label,
 menu menuitem:hover .accel, menu menuitem:selected .accel {{ color: #ffffff; }}
-menu menuitem:disabled label {{ color: rgba(0,0,0,0.30); }}
-menu separator {{ background-color: rgba(0,0,0,0.10); min-height: 1px; margin: 5px 10px; }}
+menu menuitem:disabled label {{ color: rgba({fg},0.30); }}
+menu separator {{ background-color: {line}; min-height: 1px; margin: 5px 10px; }}
 menu menuitem check, menu menuitem radio {{ background: none; border: none; box-shadow: none;
     min-width: 14px; min-height: 14px; margin-right: 6px; color: inherit; }}
 menu menuitem check:not(:checked), menu menuitem radio:not(:checked) {{ -gtk-icon-source: none; }}
 menu menuitem check:checked {{ -gtk-icon-source: -gtk-icontheme("object-select-symbolic"); }}
 menu menuitem.header label {{ font-weight: 700; }}
-menu arrow {{ color: rgba(0,0,0,0.5); }}
+menu arrow {{ color: rgba({fg},0.5); }}
 """
+
+
+def card_css():
+    d = design.dark()
+    fg, dim, btn, btn_h = ("#f5f5f7", "rgba(255,255,255,0.6)", "rgba(255,255,255,0.12)", "rgba(255,255,255,0.18)") \
+        if d else ("#1d1d1f", "rgba(0,0,0,0.6)", "rgba(0,0,0,0.07)", "rgba(0,0,0,0.12)")
+    return f"""
+#lcard label {{ color: {fg}; font-family: "SF Pro Text", "{design.FONT}", sans-serif; }}
+#lcard .title {{ font-size: 13px; font-weight: 700; }}
+#lcard .detail {{ font-size: 11px; color: {dim}; }}
+#lcard .big {{ font-size: 26px; font-weight: 800; }}
+#lcard .sub {{ font-size: 12px; color: {dim}; }}
+#lcard .key {{ font-size: 12px; color: {dim}; }}
+#lcard .val {{ font-size: 12px; font-weight: 600; }}
+#lcard entry {{ border-radius: 7px; }}
+#lcard button {{ border-radius: 980px; border: none; box-shadow: none; background-image: none;
+    padding: 6px 0; font-size: 13px; }}
+#lcard button.primary {{ background-color: #0a84ff; color: white; }}
+#lcard button.primary label {{ color: white; font-weight: 600; }}
+#lcard button.secondary {{ background-color: {btn}; }}
+#lcard button.secondary:hover {{ background-color: {btn_h}; }}
+"""
+
+
+_providers = {}
+
+
+def install_css(kind, priority=Gtk.STYLE_PROVIDER_PRIORITY_USER + 10):
+    """Bu süreçte menü ("menu") ya da kart ("card") stilini bir kez yükle; tema değişince yenile."""
+    if kind in _providers:
+        return
+    prov = Gtk.CssProvider()
+    make = menu_css if kind == "menu" else card_css
+    prov.load_from_data(make().encode())
+    Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), prov, priority)
+    design.on_theme_change(lambda: prov.load_from_data(make().encode()))
+    _providers[kind] = prov
 
 
 def sh_bg(cmd):
@@ -121,22 +163,6 @@ _ACTIONS = {
     "shutdown": ("q_shutdown", "do_shutdown", ["systemctl", "poweroff"]),
     "logout": ("q_logout", "do_logout", ["xfce4-session-logout", "--logout"]),
 }
-_CARD_CSS = b"""
-#lcard { background-color: rgba(246,246,248,0.97); border-radius: 22px; border: 1px solid rgba(0,0,0,0.08); }
-#lcard label { color: #1d1d1f; font-family: "SF Pro Text", "Inter", sans-serif; }
-#lcard .title { font-size: 13px; font-weight: 700; }
-#lcard .detail { font-size: 11px; color: rgba(0,0,0,0.6); }
-#lcard .big { font-size: 26px; font-weight: 800; }
-#lcard .sub { font-size: 12px; color: rgba(0,0,0,0.55); }
-#lcard .key { font-size: 12px; color: rgba(0,0,0,0.55); }
-#lcard .val { font-size: 12px; font-weight: 600; }
-#lcard button { border-radius: 980px; border: none; box-shadow: none; background-image: none;
-    padding: 6px 0; font-size: 13px; }
-#lcard button.primary { background-color: #0a84ff; color: white; }
-#lcard button.primary label { color: white; font-weight: 600; }
-#lcard button.secondary { background-color: rgba(0,0,0,0.07); }
-#lcard button.secondary:hover { background-color: rgba(0,0,0,0.12); }
-"""
 
 
 def _card_window(width):
@@ -152,10 +178,7 @@ def _card_window(width):
     vis = w.get_screen().get_rgba_visual()
     if vis:
         w.set_visual(vis)
-    prov = Gtk.CssProvider()
-    prov.load_from_data(_CARD_CSS)
-    Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), prov,
-                                             Gtk.STYLE_PROVIDER_PRIORITY_USER + 20)
+    install_css("card", Gtk.STYLE_PROVIDER_PRIORITY_USER + 20)
     w.connect("draw", _card_bg)
     w.connect("key-press-event", lambda wd, e: wd.destroy() if e.keyval == Gdk.KEY_Escape else None)
     return w
@@ -169,9 +192,9 @@ def _card_bg(wd, cr):
     cr.set_operator(2)                                  # OVER
     w, h = wd.get_allocated_width(), wd.get_allocated_height()
     design.rrect(cr, 0.5, 0.5, w - 1, h - 1, 22)
-    cr.set_source_rgba(246 / 255, 246 / 255, 248 / 255, 0.97)
+    cr.set_source_rgba(*design.surface(0.97))
     cr.fill_preserve()
-    cr.set_source_rgba(0, 0, 0, 0.08)
+    cr.set_source_rgba(*design.ink(0.08 if not design.dark() else 0.14))
     cr.set_line_width(1)
     cr.stroke()
     return False

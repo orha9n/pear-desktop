@@ -32,6 +32,50 @@ ORANGE = (1.0, 0.58, 0.0)
 BLUE = (0.04, 0.52, 1.0)
 
 
+# ---- Karanlık Mod: renkler temaya (xsettings Net/ThemeName, ör. MacTahoe-Dark) göre ----
+def dark():
+    try:
+        from gi.repository import Gtk
+        s = Gtk.Settings.get_default()
+        return s is not None and "dark" in (s.props.gtk_theme_name or "").lower()
+    except Exception:
+        return False
+
+
+def ink(a=1.0):
+    """Yazı / çizgi rengi: açıkta siyah, koyuda beyaz."""
+    return (1, 1, 1, a) if dark() else (0, 0, 0, a)
+
+
+def icon_ink(a=0.9):
+    return (0.92, 0.92, 0.94, a) if dark() else (0.1, 0.1, 0.12, a)
+
+
+def paper(a=1.0):
+    """Kart / saat kadranı yüzeyi."""
+    return (0.17, 0.17, 0.18, a) if dark() else (1, 1, 1, a)
+
+
+def surface(a=1.0):
+    """Menü, balon, uyarı kartı arka planı."""
+    return (0.19, 0.19, 0.2, a) if dark() else (0.965, 0.965, 0.973, a)
+
+
+def tile(a):
+    """Control Center modülü."""
+    return (1, 1, 1, 0.10) if dark() else (1, 1, 1, a)
+
+
+def glass_tint(a):
+    return (0.10, 0.10, 0.12, min(0.6, a + 0.12)) if dark() else (1, 1, 1, a)
+
+
+def on_theme_change(cb):
+    """Tema değişince (Control Center → Karanlık Mod) cb() — her süreçte xsettings ile gelir."""
+    from gi.repository import Gtk
+    Gtk.Settings.get_default().connect("notify::gtk-theme-name", lambda *_: cb())
+
+
 def rrect(cr, x, y, w, h, r):
     """Yuvarlak köşeli dikdörtgen yolu (macOS'un 'squircle'ına yakın, sürekli eğri)."""
     r = max(0.0, min(r, w / 2, h / 2))

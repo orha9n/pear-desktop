@@ -12,6 +12,8 @@ import configparser
 import math
 import os
 import signal
+import sys
+import time
 
 import cairo
 import gi
@@ -130,6 +132,10 @@ class Widget(Gtk.Window):
         rm = Gtk.MenuItem(label=t("remove_widget"))
         rm.connect("activate", lambda *_: (save(self.kind, hidden=1), self.hide()))
         m.append(rm)
+        m.append(Gtk.SeparatorMenuItem())
+        ed = Gtk.MenuItem(label=t("edit_widgets"))
+        ed.connect("activate", lambda *_: Gallery.instance and Gallery.instance.show_gallery())
+        m.append(ed)
         return m
 
     def glass_backdrop(self):
@@ -166,7 +172,7 @@ class CalendarWidget(Widget):
     def paint(self, cr):
         design.soft_shadow(cr, 0, 0, self.W, self.H, R, strength=0.16, spread=10, dy=3)
         design.rrect(cr, 0, 0, self.W, self.H, R)
-        cr.set_source_rgba(1, 1, 1, 0.98)
+        cr.set_source_rgba(*design.paper(0.98))
         cr.fill()
         now = GLib.DateTime.new_now_local()
         y, mo, today = now.get_year(), now.get_month(), now.get_day_of_month()
@@ -175,7 +181,7 @@ class CalendarWidget(Widget):
         days = DAYS_TR if LANG == "tr" else DAYS_EN
         x0, cw, top, rh = 15, (self.W - 30) / 7, 36, 19.5
         for i, d in enumerate(days):
-            col = (0, 0, 0, 0.88) if i < 5 else (0, 0, 0, 0.42)
+            col = design.ink(0.88 if i < 5 else 0.42)
             text(cr, d, x0 + cw * i + cw / 2, top, 7.5, "Bold", col, "center")
         cal = calendar.Calendar(firstweekday=0).monthdayscalendar(y, mo)
         for r, week in enumerate(cal):
@@ -190,7 +196,7 @@ class CalendarWidget(Widget):
                     cr.fill()
                     col = (1, 1, 1, 1)
                 else:
-                    col = (0, 0, 0, 0.88) if c < 5 else (0, 0, 0, 0.42)
+                    col = design.ink(0.88 if c < 5 else 0.42)
                 text(cr, str(d), cx, cy, 7.5, "Bold", col, "center")
 
 
@@ -206,17 +212,17 @@ class ClockWidget(Widget):
         bd = self.glass_backdrop()
         # cam kart: bulanık duvar kâğıdı + sıcak beyaz ton (hedefteki pembemsi cam)
         design.liquid_glass(cr, 0, 0, self.W, self.H, R, backdrop=bd, backdrop_xy=(-self.pad, -self.pad),
-                            tint=(1, 1, 1, 0.30))
+                            tint=design.glass_tint(0.30), dark=design.dark())
         cx, cy, rr = self.W / 2, self.H / 2, self.W / 2 - 13
         design.circle(cr, cx, cy, rr)
-        cr.set_source_rgba(1, 1, 1, 1)
+        cr.set_source_rgba(*design.paper(1))
         cr.fill()
         for i in range(60):                               # dakika çizgileri
             a = i * math.pi / 30
             r1 = rr - (5 if i % 5 == 0 else 3.2)
             cr.move_to(cx + math.sin(a) * r1, cy - math.cos(a) * r1)
             cr.line_to(cx + math.sin(a) * (rr - 1.8), cy - math.cos(a) * (rr - 1.8))
-            cr.set_source_rgba(0, 0, 0, 0.55 if i % 5 == 0 else 0.22)
+            cr.set_source_rgba(*design.ink(0.55 if i % 5 == 0 else 0.22))
             cr.set_line_width(1.2 if i % 5 == 0 else 0.8)
             cr.stroke()
         for h in range(1, 13):                            # rakamlar
@@ -227,7 +233,7 @@ class ClockWidget(Widget):
             lay.set_text(str(h), -1)
             tw, th = lay.get_pixel_size()
             cr.move_to(nx - tw / 2, ny - th / 2)
-            cr.set_source_rgba(0, 0, 0, 0.92)
+            cr.set_source_rgba(*design.ink(0.92))
             PangoCairo.show_layout(cr, lay)
         now = GLib.DateTime.new_now_local()
         hh, mm, ss = now.get_hour() % 12, now.get_minute(), now.get_second()
@@ -243,12 +249,12 @@ class ClockWidget(Widget):
         ma = (mm + ss / 60) * math.pi / 30
         sa = ss * math.pi / 30
         for a, ln in ((ha, rr * 0.52), (ma, rr * 0.80)):     # macOS: ince sap + kalın gövde
-            hand(a, 9, 2.2, (0, 0, 0, 0.95))
+            hand(a, 9, 2.2, design.ink(0.95))
             cr.save()
             cr.translate(cx, cy)
             cr.rotate(a)
             design.rrect(cr, -2.6, -ln, 5.2, ln - 7, 2.6)
-            cr.set_source_rgba(0, 0, 0, 0.95)
+            cr.set_source_rgba(*design.ink(0.95))
             cr.fill()
             cr.restore()
         hand(sa, rr * 0.86, 1.1, (*design.ORANGE, 1), back=rr * 0.18)
@@ -323,21 +329,120 @@ class PhotoWidget(Widget):
             self._load()
 
 
+# ----------------------------- Widget galerisi -----------------------------
+KINDS = (("calendar", "app_calendar", "x-office-calendar"), ("clock", "w_clock", "preferences-system-time"),
+         ("photo", "w_photo", "image-x-generic"))
+
+
+class Gallery(Gtk.Window):
+    """Menü çubuğunda saate tıklayınca sağ üstte açılan "Widget'lar" kartı (macOS'ta saat Bildirim
+    Merkezi'ni, altındaki "Widget'ları Düzenle" galeriyi açar). Kaldırılan widget'lar buradan geri eklenir."""
+    instance = None
+    W = 280
+
+    def __init__(self, classes, live):
+        super().__init__(type=Gtk.WindowType.TOPLEVEL)
+        from .applemenu import install_css, _card_bg
+        Gallery.instance = self
+        self.classes, self.live = classes, live           # kind -> sınıf, kind -> açık pencere
+        self.set_name("lcard")
+        self.set_title("Liquid Widgets")
+        self.set_decorated(False)
+        self.set_resizable(False)
+        self.set_skip_taskbar_hint(True)
+        self.set_skip_pager_hint(True)
+        self.set_keep_above(True)
+        self.set_type_hint(Gdk.WindowTypeHint.DIALOG)
+        self.set_app_paintable(True)
+        vis = self.get_screen().get_rgba_visual()
+        if vis:
+            self.set_visual(vis)
+        install_css("card", Gtk.STYLE_PROVIDER_PRIORITY_USER + 20)
+        self.connect("draw", _card_bg)
+        self.connect("focus-out-event", lambda *_: (time.monotonic() - self._shown > 0.5 and self.hide(), False)[1])
+        self.connect("key-press-event", lambda w, e: (e.keyval == Gdk.KEY_Escape and self.hide(), False)[1])
+        self._shown = 0.0
+        self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        for m in ("top", "bottom", "start", "end"):
+            getattr(self.box, f"set_margin_{m}")(16)
+        self.add(self.box)
+
+    def _rebuild(self):
+        from .applemenu import _icon
+        for ch in self.box.get_children():
+            self.box.remove(ch)
+        title = Gtk.Label(label=t("widgets"), xalign=0)
+        title.get_style_context().add_class("title")
+        self.box.pack_start(title, False, False, 0)
+        cp = conf()
+        for kind, label, icon in KINDS:
+            on = cp.get(kind, "hidden", fallback="0") != "1"
+            row = Gtk.Box(spacing=10)
+            row.pack_start(_icon(icon, 28), False, False, 0)
+            lb = Gtk.Label(label=t(label), xalign=0)
+            lb.get_style_context().add_class("val")
+            row.pack_start(lb, True, True, 0)
+            b = Gtk.Button(label=t("remove") if on else t("add"))
+            b.get_style_context().add_class("secondary" if on else "primary")
+            b.set_size_request(84, -1)
+            b.connect("clicked", lambda _b, k=kind, o=on: self._set(k, not o))
+            row.pack_end(b, False, False, 0)
+            self.box.pack_start(row, False, False, 0)
+        done = Gtk.Button(label=t("done"))
+        done.get_style_context().add_class("secondary")
+        done.set_margin_top(4)
+        done.connect("clicked", lambda *_: self.hide())
+        self.box.pack_start(done, False, False, 0)
+        self.box.show_all()
+
+    def _set(self, kind, on):
+        save(kind, hidden=0 if on else 1)
+        w = self.live.get(kind)
+        if on:
+            if w is None:
+                w = self.live[kind] = self.classes[kind]()
+            w.show_all()
+        elif w is not None:
+            w.hide()
+        self._rebuild()
+
+    def toggle(self):
+        if self.get_visible():
+            self.hide()
+        else:
+            self.show_gallery()
+
+    def show_gallery(self):
+        self._rebuild()
+        mx, my, mw, _ = screen_geometry()
+        self.set_size_request(self.W, -1)
+        self.move(mx + mw - self.W - 10, my + design.BAR_H + 6)
+        self._shown = time.monotonic()
+        self.show_all()
+        self.set_keep_above(True)
+        self.present()
+        GLib.timeout_add(60, lambda: (self.get_window() and self.get_window().focus(Gdk.CURRENT_TIME), False)[1])
+
+
 def main():
     if not daemon.claim("widgets"):
         return
-    css = Gtk.CssProvider()
-    from .applemenu import MENU_CSS
-    css.load_from_data(MENU_CSS.encode())
-    Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_USER + 10)
+    from .applemenu import install_css
+    install_css("menu")
     cp = conf()
-    for cls in (CalendarWidget, ClockWidget, PhotoWidget):
-        if cp.get(cls.kind, "hidden", fallback="0") != "1":
-            cls().show_all()
-    # Görünür widget olmasa da süreç AYAKTA kalır: çıkarsa oturum bekçisi 5 sn'de bir yeniden başlatıp
-    # sonsuz döngüye giriyordu. SIGUSR1 (menü çubuğunda saate tıklama) işleyicisiz kalırsa varsayılan
-    # davranışla süreci öldürür → şimdilik zararsızca yutulur.
-    daemon.on_signal(signal.SIGUSR1, lambda: None)
+    classes = {c.kind: c for c in (CalendarWidget, ClockWidget, PhotoWidget)}
+    live = {}
+    for kind, cls in classes.items():
+        if cp.get(kind, "hidden", fallback="0") != "1":
+            live[kind] = cls()
+            live[kind].show_all()
+    # Görünür widget olmasa da süreç AYAKTA kalır (çıkarsa bekçi 5 sn'de bir yeniden başlatıyordu).
+    # SIGUSR1 = menü çubuğunda saate tıklama → Widget'lar galerisi (kaldırılanlar buradan geri eklenir).
+    gallery = Gallery(classes, live)
+    design.on_theme_change(lambda: [w.queue_draw() for w in live.values()])
+    daemon.on_signal(signal.SIGUSR1, gallery.toggle)
+    if "--show" in sys.argv:
+        GLib.timeout_add(150, lambda: (gallery.show_gallery(), False)[1])
     Gtk.main()
 
 

@@ -107,7 +107,7 @@ class AppIndex:
             keys = {did[:-8].lower() if did.endswith(".desktop") else did.lower()}
             wm = ai.get_startup_wm_class()
             if wm:
-                keys.add(wm.lower())
+                keys.add(_strip_ext(wm.lower()))
             ex = os.path.basename((ai.get_executable() or "").strip()).lower()
             if ex and ex not in _SKIP_EXE and not _interp(ex):
                 keys.add(_strip_ext(ex))
@@ -153,6 +153,39 @@ class AppIndex:
 # Açılan uygulamalar Liquid bileşeninin stdout/stderr'ini (~/.cache/liquid/*.log) miras alıp
 # loglara yazıyordu (Chrome SSL hataları vb.) → çıktıları /dev/null'a
 _SPAWN = GLib.SpawnFlags.SEARCH_PATH | GLib.SpawnFlags.STDOUT_TO_DEV_NULL | GLib.SpawnFlags.STDERR_TO_DEV_NULL
+
+
+def make_desktop(w):
+    """Pencerenin sürecinden .desktop üret (Dock'ta Tut için). Kimliği döndürür; olmazsa None."""
+    import re
+    import shlex
+    pid = w.get_pid()
+    cls = _strip_ext(w.get_class_group_name() or w.get_name() or "")
+    slug = re.sub(r"[^a-z0-9]+", "-", cls.lower()).strip("-")
+    if not pid or not slug:
+        return None
+    try:
+        with open(f"/proc/{pid}/cmdline", "rb") as f:
+            argv = [a.decode(errors="ignore") for a in f.read().split(b"\0") if a]
+    except OSError:
+        return None
+    if not argv:
+        return None
+    base = os.path.expanduser("~/.local/share")
+    os.makedirs(os.path.join(base, "applications"), exist_ok=True)
+    os.makedirs(os.path.join(base, "liquid", "icons"), exist_ok=True)
+    icon = os.path.join(base, "liquid", "icons", slug + ".png")
+    pb = w.get_icon()
+    if pb is not None:
+        pb.savev(icon, "png", [], [])
+    did = f"liquid-{slug}.desktop"
+    exe = " ".join(shlex.quote(a) for a in argv).replace("%", "%%")   # .desktop: % kaçışı
+    with open(os.path.join(base, "applications", did), "w") as f:
+        f.write("[Desktop Entry]\nType=Application\n"
+                f"Name={cls}\nExec={exe}\nIcon={icon if pb is not None else 'application-x-executable'}\n"
+                f"StartupWMClass={w.get_class_instance_name() or cls}\nNoDisplay=true\n"
+                "X-Liquid-Generated=true\n")
+    return did
 
 
 def launch(ai, uris=None):

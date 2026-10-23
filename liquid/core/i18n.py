@@ -19,7 +19,10 @@ S = {
     "new_finder": ("New Finder Window", "Yeni Finder Penceresi"), "new_folder": ("New Folder", "Yeni Klasör"),
     "find": ("Find", "Bul"), "undo": ("Undo", "Geri Al"), "redo": ("Redo", "Yinele"),
     "cut": ("Cut", "Kes"), "copy": ("Copy", "Kopyala"), "paste": ("Paste", "Yapıştır"),
-    "select_all": ("Select All", "Tümünü Seç"), "as_icons": ("as Icons", "Simge Olarak"),
+    "select_all": ("Select All", "Tümünü Seç"),
+    "close_window": ("Close Window", "Pencereyi Kapat"), "minimize": ("Minimize", "Küçült"),
+    "zoom_fill": ("Fill", "Doldur"), "bring_all": ("Bring All to Front", "Tümünü Öne Getir"),
+    "help_app": ("{} Help", "{} Yardım"), "as_icons": ("as Icons", "Simge Olarak"),
     "as_list": ("as List", "Liste Olarak"), "go_home": ("Home", "Ev"), "go_desktop": ("Desktop", "Masaüstü"),
     "go_documents": ("Documents", "Belgeler"), "go_downloads": ("Downloads", "İndirilenler"),
     "go_computer": ("Computer", "Bilgisayar"), "go_network": ("Network", "Ağ"),
@@ -66,6 +69,9 @@ S = {
     # widget'lar
     "edit_widget": ("Edit Widget", "Widget'ı Düzenle"), "remove_widget": ("Remove Widget", "Widget'ı Kaldır"),
     "choose_photo": ("Choose Photo…", "Fotoğraf Seç…"),
+    "widgets": ("Widgets", "Widget'lar"), "edit_widgets": ("Edit Widgets…", "Widget'ları Düzenle…"),
+    "w_clock": ("Clock", "Saat"), "w_photo": ("Photo", "Fotoğraf"),
+    "add": ("Add", "Ekle"), "remove": ("Remove", "Kaldır"), "done": ("Done", "Bitti"),
 }
 
 

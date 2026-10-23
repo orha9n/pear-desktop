@@ -49,12 +49,14 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
 - **Öneri:** Widget yoksa da süreç ayakta kalsın (sinyal beklesin) ya da bekçi "bilerek kapandı"
   durumunu (çıkış kodu/işaret dosyası) tanısın.
 
-### 4. Kaldırılan widget'ı geri eklemenin yolu yok
+### 4. ✅ DÜZELTİLDİ — Kaldırılan widget'ı geri eklemenin yolu yok
+> Saate tıklayınca (ya da widget sağ tık → Widget'ları Düzenle…) sağ üstte "Widget'lar" galerisi: Takvim/Saat/Fotoğraf Ekle/Kaldır.
 - Sağ tık → "Widget'ı Kaldır" `hidden=1` yazıyor ([widgets.py:130](liquid/widgets.py:130)); hiçbir yerde
   "Widget Ekle / Widget'ları Düzenle" yok (`i18n`'deki `edit_widget` metni hiç kullanılmıyor).
   Geri getirmek için `widgets.ini` elle düzenlenmeli.
 
-### 5. ✅ KISMEN DÜZELTİLDİ — Saate tıklamak widget sürecini öldürüyor
+### 5. ✅ DÜZELTİLDİ — Saate tıklamak widget sürecini öldürüyor
+> Saat tıklaması artık Widget'lar galerisini açıyor (madde 4).
 > SIGUSR1 artık yutuluyor (süreç ölmüyor, test edildi). Saate tıklamak şimdilik hiçbir şey yapmıyor;
 > Bildirim Merkezi / widget ekleme (madde 4) için kullanılabilir.
 - **Yer:** [bar.py:294](liquid/bar.py:294) saate tıklayınca `signal_component("widgets")` → SIGUSR1.
@@ -92,7 +94,8 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
 - **Öneri:** Uygulamaları başlatırken stdout/stderr'i `/dev/null`'a ya da ayrı dosyaya yönlendir; logu boyutla
   sınırla; bekçi bir bileşen yeniden başlatınca çıkış kodu/sinyali loglasın.
 
-### 9. Global menü çoğu uygulamada boş kalıyor
+### 9. ✅ DÜZELTİLDİ — Global menü çoğu uygulamada boş kalıyor
+> Menü gelmezse 0,7 sn sonra yedek menüler: Dosya (Yeni Pencere, Pencereyi Kapat), Düzen (tuşu uygulamaya gönderir), Görüntü (Tam Ekran), Pencere (Küçült, Doldur, Tümünü Öne Getir), Yardım. Registrar'ın kalıcı çalışması ayrıca ele alınmadı.
 - Örn. Takvim (GNOME Calendar, GTK4) aktifken çubukta yalnız "Takvim" yazıyor, Dosya/Düzen/… yok.
   GTK4/libadwaita, çoğu Electron ve Firefox menülerini dışa aktarmıyor. macOS görünümünde sol taraf sık sık boş.
 - `com.canonical.AppMenu.Registrar` sürekli çalışmıyor: `busctl --user list` → yalnızca "activatable";
@@ -131,7 +134,8 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
   son değer bazen önceki komuttan önce uygulanıp ses/parlaklık "geri sıçrayabilir".
 - **Öneri:** Değeri biriktir, 50–100 ms'de bir uygula (throttle), ya da PulseAudio/`/sys` API'sini doğrudan kullan.
 
-### 13. Karanlık Mod Liquid bileşenlerini değiştirmiyor
+### 13. ✅ DÜZELTİLDİ — Karanlık Mod Liquid bileşenlerini değiştirmiyor
+> `design.dark()/ink()/paper()/surface()/tile()/glass_tint()` paleti; menüler, kartlar, Control Center, Spotlight, dock balonu/noktası, takvim/saat widget'ları, tam ekran şeridi temaya uyuyor ve tema değişince anında yenileniyor (ekran dışı çizimle iki temada doğrulandı).
 - [controlcenter.py:89](liquid/controlcenter.py:89) yalnızca GTK/xfwm/ikon temasını değiştiriyor. Menü
   çubuğu menüleri, dock balonu, Control Center, Spotlight, onay kartları ve "Bu Mac Hakkında" sabit
   açık renkte çiziliyor ([applemenu.py:18](liquid/applemenu.py:18) `MENU_CSS` vb.). Karanlık modda
@@ -179,7 +183,8 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
   NetworkManager yavaşsa çubuk donar.
 - Bağlı ağın satırına tıklamak bağlantıyı yeniden kuruyor (CheckMenuItem durumu da tersine dönüyor).
 
-### 20. Menüdeki kısayollar sadece yazı
+### 20. ✅ DÜZELTİLDİ — Menüdeki kısayollar sadece yazı
+> ⌘Q ⌘H ⌥⌘H ⌘M global kısayolları (`liquid app quit|hide|hide-others|minimize`, yedekli); test penceresinde ⌘M/⌘Q doğrulandı. Finder Düzen menüsü masaüstünde seçim olmadığı için macOS'taki gibi devre dışı kalıyor.
 - ⌘Q, ⌘H, ⌥⌘H, ⌘N, ⇧⌘N, ⌘F, ⇧⌘G… menülerde yazıyor ama hiçbiri bağlı değil; yalnızca
   `Super+Space` → Spotlight kurulu. Finder menüsündeki Düzen (Geri Al, Kes, Kopyala…) ve Görüntü
   öğelerinin hepsi devre dışı (`None` geri çağrı) — işlevsiz menüler ([bar.py:550-552](liquid/bar.py:550)).
@@ -201,15 +206,15 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
 
 23. ✅ (Dock `_poll` gün değişince yeniden çiziyor.) **Dock takvim ikonu gece yarısı güncellenmiyor:** gün sayısı yalnızca dock yeniden çizildiğinde
     değişiyor; zamanlayıcı yok ([dock.py:233](liquid/dock.py:233)). Fare dock'a gelene kadar dünün tarihi kalabilir.
-24. **Dock tıklama davranışı macOS'tan farklı:** tek pencereli aktif uygulamanın ikonuna tıklamak
+24. ✅ (Tıklama öne getirir, küçültmez; tümü küçültülmüşse sonuncuyu açar.) **Dock tıklama davranışı macOS'tan farklı:** tek pencereli aktif uygulamanın ikonuna tıklamak
     pencereyi küçültüyor ([dock.py:511](liquid/dock.py:511)); macOS'ta bir şey olmaz.
 25. **Sahte cam:** dock/CC/Spotlight camı yalnızca duvar kâğıdını bulanıklaştırıyor; arkadaki pencereler
     görünmüyor (dock'un arkasına sürüklenen pencere camda yok).
 26. **Bellek:** 6 ayrı Python+GTK süreci ≈ 400 MB RSS (launcher 117 MB, dock 81 MB, spotlight 72 MB, bar 71 MB…).
 27. ✅ (`.xprofile` bloğu modül zaten varsa eklemiyor (install yeniden yazar; kullanıcının bloğu güncellendi).) **`.xprofile` GTK_MODULES'u ikiler:** Mint zaten `appmenu-gtk-module` ekliyor; oturumda
     `GTK_MODULES=appmenu-gtk-module:appmenu-gtk-module:gail:atk-bridge`.
-28. **Uzun global menüler** sağdaki saat/simgelerle çakışabilir; menü çubuğunda taşma/kısaltma yok.
-29. **Pencere (`win`) türü dock öğeleri** `.desktop` olmayan uygulamalarda Wnck'nin küçük ikonunu
+28. ✅ (Sığmayan menüler » altına (`_fit`); 16 uzun menüyle doğrulandı.) **Uzun global menüler** sağdaki saat/simgelerle çakışabilir; menü çubuğunda taşma/kısaltma yok.
+29. ✅ (Wnck ikonu dock boyutunda isteniyor; "Dock'ta Tut" komut satırından `liquid-*.desktop` üretiyor.) **Pencere (`win`) türü dock öğeleri** `.desktop` olmayan uygulamalarda Wnck'nin küçük ikonunu
     54 px'e büyütüyor → bulanık ikon; bu öğeler "Dock'ta Tut" yapılamıyor.
 30. ✅ (Çöp durumu gvfs `trash:///` `item-count` ile (tüm diskler).) **Çöp dolu/boş algısı** yalnızca `~/.local/share/Trash` — diğer disklerdeki `.Trash-1000` dikkate alınmıyor.
 31. ✅ (`LANGUAGE` önce; yerel ayar C/POSIX ise İngilizce.) **Dil algılama:** `i18n._lang()` `LANGUAGE`'ı en son kontrol ediyor; gettext'te en önceliklisi o.

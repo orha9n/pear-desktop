@@ -215,3 +215,5 @@ macbook/
 - 21:2x — problems.md 1. grup düzeltildi (6, 8, 11, 12, 14–19, 21, 23, 27, 30–32, 34, 35). Tüm bileşenler +
   bekçi yeniden başlatıldı. Kullanıcı: testlerde fareyi/ekranı KULLANMA (xdotool tıklaması reddedildi) →
   bundan sonra doğrulama ekran dışı (birim test, kuru çalıştırma, süreç sayımı) ya da kullanıcıya sorarak.
+- 21:3x — problems.md 2. grup düzeltildi (4, 5, 9, 13, 20, 24, 28, 29). Karanlık Mod paleti `core/design.py`'de;
+  yeni renk yazarken sabit (0,0,0,a) yerine `design.ink(a)` vb. kullan (gölge/karartma hariç).

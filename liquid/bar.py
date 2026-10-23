@@ -182,6 +182,7 @@ class Bar(Gtk.Window):
         self.connect("draw", self._draw_bg)
         self.connect("realize", lambda *_: GLib.timeout_add(200, self._strut))
 
+        applemenu.install_css("menu")                   # açılır menüler (açık / koyu)
         self.css = Gtk.CssProvider()
         Gtk.StyleContext.add_provider_for_screen(
             Gdk.Screen.get_default(), self.css, Gtk.STYLE_PROVIDER_PRIORITY_USER + 10)
@@ -275,7 +276,7 @@ class Bar(Gtk.Window):
     min-height: {H - 6}px; min-width: 0; border-radius: 6px; }}
 #lbar button:hover, #lbar button:checked {{ background-color: {hov}; }}
 #lbar button label {{ font-size: {design.BAR_FONT_PX}px; font-weight: 500; color: {fg}; text-shadow: {shadow}; }}
-""" + applemenu.MENU_CSS)
+""")
         for g in getattr(self, "glyphs", []):
             g.light = self.light_text
             g.queue_draw()
@@ -569,6 +570,9 @@ class Bar(Gtk.Window):
             client.connect("layout-updated", lambda c: self._dbus_layout(c))
             GLib.timeout_add(150, lambda: (self._dbus_layout(client), False)[1])
         self.menubar.show_all()
+        # menüsünü dışa aktarmayan uygulamalar (GTK4, çoğu Electron, Firefox): biraz bekle, gelmezse yedek
+        key = self.cur
+        GLib.timeout_add(700, lambda: (self.cur == key and not self._open and self._menus_ready(), False)[1])
 
     def _dbus_layout(self, client):
         if client is not self.dbus_client:
@@ -585,6 +589,7 @@ class Bar(Gtk.Window):
                 if mi is not None and not isinstance(mi, Gtk.SeparatorMenuItem):
                     self.menubar.append(self._track(mi))
         self.menubar.show_all()
+        self._menus_ready()
 
     def _gtk_menus(self, props):
         bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
@@ -619,8 +624,79 @@ class Bar(Gtk.Window):
                 mi.set_submenu(Gtk.Menu.new_from_model(sub))
                 self.menubar.append(self._track(mi))
             self.menubar.show_all()
+            self._menus_ready()
         model.connect("items-changed", fill)
         fill()
+
+    def _menus_ready(self):
+        if len(self.menubar.get_children()) <= 2 and self.cur and self.cur[0]:
+            self._fallback_menus()
+        self._fit()
+        return False
+
+    def _fallback_menus(self):
+        """macOS'ta her uygulamanın Dosya/Düzen/Görüntü/Pencere/Yardım menüsü vardır. Menüsünü dışa
+        aktarmayan uygulamalar için genel karşılıkları: Düzen öğeleri tuş kombinasyonunu uygulamaya gönderir."""
+        xid, did = self.cur
+        nm = apps.name(did, self._window())
+        win = self._window
+
+        def keys(combo):                       # menü kapanıp odak uygulamaya dönünce tuşu gönder
+            return lambda: GLib.timeout_add(120, lambda: (sh_bg(["xdotool", "key", "--clearmodifiers", combo]),
+                                                          False)[1])
+
+        def own():
+            return self._windows_of(did) or [w for w in (win(),) if w]
+
+        def fill():
+            w = win()
+            if w is not None:
+                (w.unmaximize if w.is_maximized() else w.maximize)()
+        ai = apps.info(did) if did else None
+        menus = [
+            (t("m_file"), [(t("new_window"), (lambda: apps.launch(ai)) if ai else None, "⌘N"), None,
+                           (t("close_window"), lambda: [w.close(Gtk.get_current_event_time()) for w in (win(),) if w],
+                            "⌘W")]),
+            (t("m_edit"), [(t("undo"), keys("ctrl+z"), "⌘Z"), (t("redo"), keys("ctrl+shift+z"), "⇧⌘Z"), None,
+                           (t("cut"), keys("ctrl+x"), "⌘X"), (t("copy"), keys("ctrl+c"), "⌘C"),
+                           (t("paste"), keys("ctrl+v"), "⌘V"), (t("select_all"), keys("ctrl+a"), "⌘A")]),
+            (t("m_view"), [(t("enter_fullscreen"), lambda: self.macfs.toggle(xid), "⌃⌘F")]),
+            (t("m_window"), [(t("minimize"), lambda: [w.minimize() for w in (win(),) if w], "⌘M"),
+                             (t("zoom_fill"), fill, None), None,
+                             (t("bring_all"), lambda: [w.activate(Gtk.get_current_event_time()) for w in own()],
+                              None)]),
+            (t("m_help"), [(t("help_app").format(nm), None, None)]),
+        ]
+        for title, entries in menus:
+            mi = Gtk.MenuItem(label=title)
+            sub = Gtk.Menu()
+            for e in entries:
+                sub.append(sep() if e is None else item(e[0], e[1], e[2], sensitive=e[1] is not None))
+            mi.set_submenu(sub)
+            self.menubar.append(self._track(mi))
+        self.menubar.show_all()
+
+    def _fit(self):
+        """Uzun menüler sağdaki simge/saatle çakışmasın: sığmayanlar » menüsüne taşınır."""
+        kids = self.menubar.get_children()
+        avail = self.mw - 10 - 12 - self.right.get_preferred_width()[1] - 24
+        more_w = 34                                         # » öğesinin payı
+        total, cut = 0, None
+        for i, ch in enumerate(kids):
+            total += ch.get_preferred_width()[1]
+            if total > avail - (more_w if i < len(kids) - 1 else 0) and i >= 2:
+                cut = i
+                break
+        if cut is None:
+            return
+        more = Gtk.MenuItem(label="»")
+        sub = Gtk.Menu()
+        for ch in kids[cut:]:
+            self.menubar.remove(ch)
+            sub.append(ch)
+        more.set_submenu(sub)
+        self.menubar.append(self._track(more))
+        self.menubar.show_all()
 
     # ---------- uygulama adı menüsü ----------
     def _windows_of(self, did):
@@ -693,6 +769,7 @@ class Bar(Gtk.Window):
             mi.set_submenu(sub)
             self.menubar.append(self._track(mi))
         self.menubar.show_all()
+        self._fit()
 
     def _new_folder(self):
         base = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DESKTOP) or os.path.expanduser("~")

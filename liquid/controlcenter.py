@@ -255,7 +255,7 @@ class ControlCenter(Gtk.Window):
             Gdk.cairo_set_source_pixbuf(cr, pb, x, y)
             cr.paint()
 
-    def _text(self, cr, s, x, y, size, weight="Semi-Bold", rgba=(0, 0, 0, 0.88), width=None):
+    def _text(self, cr, s, x, y, size, weight="Semi-Bold", rgba=None, width=None):
         lay = PangoCairo.create_layout(cr)
         lay.set_font_description(Pango.FontDescription(f"{design.FONT} {weight} {size}"))
         if width:
@@ -263,12 +263,12 @@ class ControlCenter(Gtk.Window):
             lay.set_ellipsize(Pango.EllipsizeMode.END)
         lay.set_text(s, -1)
         cr.move_to(x, y)
-        cr.set_source_rgba(*rgba)
+        cr.set_source_rgba(*(rgba or design.ink(0.88)))
         PangoCairo.show_layout(cr, lay)
 
     def _tile(self, cr, x, y, w, h, r=TILE_R):
         design.rrect(cr, x, y, w, h, r)
-        cr.set_source_rgba(1, 1, 1, 0.42)
+        cr.set_source_rgba(*design.tile(0.42))
         cr.fill()
         design.rrect(cr, x + 0.5, y + 0.5, w - 1, h - 1, r)
         g = cairo.LinearGradient(0, y, 0, y + h)
@@ -280,10 +280,10 @@ class ControlCenter(Gtk.Window):
 
     def _circle_btn(self, cr, cx, cy, r, on, icon):
         design.circle(cr, cx, cy, r)
-        cr.set_source_rgba(*design.BLUE, 1) if on else cr.set_source_rgba(0, 0, 0, 0.10)
+        cr.set_source_rgba(*design.BLUE, 1) if on else cr.set_source_rgba(*design.ink(0.10))
         cr.fill()
         s = int(r * 1.05)
-        self._icon(cr, icon, cx - s / 2, cy - s / 2, s, (1, 1, 1, 1) if on else (0.1, 0.1, 0.12, 0.9))
+        self._icon(cr, icon, cx - s / 2, cy - s / 2, s, (1, 1, 1, 1) if on else design.icon_ink(0.9))
 
     # ---------- çizim ----------
     def on_draw(self, w, cr):
@@ -292,7 +292,8 @@ class ControlCenter(Gtk.Window):
         cr.paint()
         cr.set_operator(cairo.OPERATOR_OVER)
         cr.translate(self.shadow, self.shadow)
-        design.liquid_glass(cr, 0, 0, W, self.H, 26, backdrop=self.backdrop, tint=(1, 1, 1, 0.34))
+        design.liquid_glass(cr, 0, 0, W, self.H, 26, backdrop=self.backdrop, tint=design.glass_tint(0.34),
+                            dark=design.dark())
         self.regions = []
         st = self.st
         x0, y = PAD, PAD
@@ -309,7 +310,7 @@ class ControlCenter(Gtk.Window):
             ry = y + 14 + i * 46
             self._circle_btn(cr, x0 + 28, ry + 15, 15, on, icon)
             self._text(cr, title, x0 + 52, ry + 2, 9.5, "Semi-Bold", width=bw - 60)
-            self._text(cr, sub, x0 + 52, ry + 17, 8, "Regular", (0, 0, 0, 0.55), width=bw - 60)
+            self._text(cr, sub, x0 + 52, ry + 17, 8, "Regular", design.ink(0.55), width=bw - 60)
             self.regions.append((x0, ry, bw, 40, key))
         # --- Odak (Rahatsız Etme) ---
         fx = x0 + bw + GAP
@@ -318,7 +319,7 @@ class ControlCenter(Gtk.Window):
                          if Gtk.IconTheme.get_default().has_icon("notifications-disabled-symbolic")
                          else "weather-clear-night-symbolic")
         self._text(cr, t("focus"), fx + 48, y + 20, 9.5, "Semi-Bold", width=sw - 52)
-        self._text(cr, t("on") if st["dnd"] else t("off"), fx + 48, y + 36, 8, "Regular", (0, 0, 0, 0.55))
+        self._text(cr, t("on") if st["dnd"] else t("off"), fx + 48, y + 36, 8, "Regular", design.ink(0.55))
         self.regions.append((fx, y, sw, 72, "dnd"))
         # --- iki kare kutucuk ---
         qw = (sw - GAP) / 2
@@ -326,7 +327,7 @@ class ControlCenter(Gtk.Window):
                                                 ("shot", "camera-photo-symbolic", t("screenshot")))):
             qx = fx + j * (qw + GAP)
             self._tile(cr, qx, y + 82, qw, 72)
-            self._icon(cr, icon, qx + qw / 2 - 10, y + 96, 20, (0.1, 0.1, 0.12, 0.85))
+            self._icon(cr, icon, qx + qw / 2 - 10, y + 96, 20, design.icon_ink(0.85))
             lay = PangoCairo.create_layout(cr)
             lay.set_font_description(Pango.FontDescription(f"{design.FONT} Medium 7"))
             lay.set_width(int((qw - 6) * Pango.SCALE))
@@ -334,7 +335,7 @@ class ControlCenter(Gtk.Window):
             lay.set_wrap(Pango.WrapMode.WORD)
             lay.set_text(label, -1)
             cr.move_to(qx + 3, y + 122)
-            cr.set_source_rgba(0, 0, 0, 0.75)
+            cr.set_source_rgba(*design.ink(0.75))
             PangoCairo.show_layout(cr, lay)
             self.regions.append((qx, y + 82, qw, 72, key))
         y += 154 + GAP
@@ -345,7 +346,7 @@ class ControlCenter(Gtk.Window):
             self._text(cr, title, x0 + 14, y + 9, 9.5, "Semi-Bold")
             sx, sy, sl, sh = x0 + 14, y + 32, W - 2 * PAD - 28, 22
             design.rrect(cr, sx, sy, sl, sh, sh / 2)
-            cr.set_source_rgba(0, 0, 0, 0.10)
+            cr.set_source_rgba(*design.ink(0.10))
             cr.fill()
             fw = sh + (sl - sh) * max(0, min(100, val)) / 100
             design.rrect(cr, sx, sy, fw, sh, sh / 2)
@@ -371,17 +372,17 @@ class ControlCenter(Gtk.Window):
         if surf is not None:
             cr.set_source_surface(surf, ax, ay)
         else:
-            cr.set_source_rgba(0, 0, 0, 0.08)
+            cr.set_source_rgba(*design.ink(0.08))
         cr.paint()
         cr.restore()
         if surf is None:
-            self._icon(cr, "audio-x-generic-symbolic", ax + 14, ay + 14, 20, (0.3, 0.3, 0.33, 0.8))
+            self._icon(cr, "audio-x-generic-symbolic", ax + 14, ay + 14, 20, design.icon_ink(0.8))
         self._text(cr, title or t("not_playing"), ax + 60, ay + 7, 9.5, "Semi-Bold", width=150)
-        self._text(cr, artist, ax + 60, ay + 24, 8, "Regular", (0, 0, 0, 0.55), width=150)
+        self._text(cr, artist, ax + 60, ay + 24, 8, "Regular", design.ink(0.55), width=150)
         px = W - PAD - 76
         self._icon(cr, "media-playback-pause-symbolic" if status == "Playing" else "media-playback-start-symbolic",
-                   px, y + 26, 20, (0.1, 0.1, 0.12, 0.9))
-        self._icon(cr, "media-skip-forward-symbolic", px + 36, y + 26, 20, (0.1, 0.1, 0.12, 0.9))
+                   px, y + 26, 20, design.icon_ink(0.9))
+        self._icon(cr, "media-skip-forward-symbolic", px + 36, y + 26, 20, design.icon_ink(0.9))
         self.regions.append((px - 6, y + 18, 32, 36, "play"))
         self.regions.append((px + 30, y + 18, 32, 36, "next"))
         return True
@@ -476,6 +477,7 @@ def main():
     if not daemon.claim("controlcenter"):
         return
     cc = ControlCenter()
+    design.on_theme_change(cc.queue_draw)
     # ilk açılışta bulanık arka plan hesabı ~1 sn sürüyordu → boşta önceden hesapla (önbelleğe girer)
     GLib.idle_add(lambda: (cc._place(), False)[1])
     daemon.on_signal(signal.SIGUSR1, cc.toggle)

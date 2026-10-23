@@ -141,6 +141,8 @@ class Dock(Gtk.Window):
         self.theme = Gtk.IconTheme.get_default()
         self.theme.connect("changed", lambda *_: [setattr(i, "surface", None) for i in self.items])
 
+        # .desktop'u olmayan pencerelerin ikonu Wnck'den gelir; varsayılan 32 px büyütülünce bulanıktı
+        Wnck.set_default_icon_size(self.M * self.get_scale_factor())
         self.wnck = Wnck.Screen.get_default()
         self.wnck.force_update()
         self.index = apps.AppIndex()
@@ -394,7 +396,7 @@ class Dock(Gtk.Window):
         self._layout()
         design.liquid_glass(cr, self.bg_x, self.bg_y, self.bg_w, self.BG_H, design.DOCK_RADIUS,
                             backdrop=self.backdrop, backdrop_xy=(0, 0),
-                            tint=(1, 1, 1, 0.20))
+                            tint=design.glass_tint(0.20), dark=design.dark())
         now = time.monotonic()
         anim = False
         sf = self.get_scale_factor()
@@ -433,7 +435,7 @@ class Dock(Gtk.Window):
                     cr.fill()
             if it.running or it.key in ALWAYS_RUNNING:
                 design.circle(cr, it.x + size / 2, by + bh - 3.2, 2.1)
-                cr.set_source_rgba(0, 0, 0, 0.55)
+                cr.set_source_rgba(*design.ink(0.55))
                 cr.fill()
         hi = self.hover_item
         if hi is not None and hi.kind != "sep" and not self.dragging and now - self._bubble_at > 0.18:
@@ -454,13 +456,13 @@ class Dock(Gtk.Window):
         y = max(2, by - bh - 12 - (it.w - self.S))
         design.soft_shadow(cr, x, y, bw, bh, bh / 2, strength=0.18, spread=8, dy=2)
         design.rrect(cr, x, y, bw, bh, bh / 2)
-        cr.set_source_rgba(0.96, 0.96, 0.97, 0.92)
+        cr.set_source_rgba(*design.surface(0.92))
         cr.fill_preserve()
         cr.set_source_rgba(0, 0, 0, 0.10)
         cr.set_line_width(1)
         cr.stroke()
         cr.move_to(x + 12, y + 6)
-        cr.set_source_rgba(0.08, 0.08, 0.09, 0.95)
+        cr.set_source_rgba(*design.ink(0.92))
         PangoCairo.show_layout(cr, layout)
 
     def _anim(self):
@@ -566,15 +568,16 @@ class Dock(Gtk.Window):
             wins = it.wins
             if not wins:
                 return
+            # macOS: tıklamak uygulamayı öne getirir, KÜÇÜLTMEZ. Görünen penceresi yoksa küçültülmüş
+            # son pencereyi geri açar; varsa en son kullanılanı (etkinse onu) öne alır.
             active = self.wnck.get_active_window()
             mine = active is not None and active.get_xid() in it.windows
-            if mine and len(wins) == 1:
-                active.minimize()
-                return
-            for wd in wins:
-                if wd.is_minimized():
-                    wd.unminimize(ts)
-            (active if mine else wins[-1]).activate(ts)
+            shown = [wd for wd in wins if not wd.is_minimized()]
+            if not shown:
+                wins[-1].unminimize(ts)
+                wins[-1].activate(ts)
+            else:
+                (active if mine else shown[-1]).activate(ts)
         elif it.info is not None:
             self.launch(it)
 
@@ -585,7 +588,7 @@ class Dock(Gtk.Window):
             self._anim()
 
     def _menu(self, it, e):
-        from .applemenu import MENU_CSS, confirm_empty_trash  # noqa: F401  (menü stili bu süreçte yüklü olsun)
+        from .applemenu import confirm_empty_trash
         m = Gtk.Menu()
 
         def add(label, cb, sensitive=True):
@@ -613,6 +616,8 @@ class Dock(Gtk.Window):
                     add(it.info.get_action_name(a), lambda a=a: apps.launch_action(it.info, a))
                 m.append(Gtk.SeparatorMenuItem())
                 add(t("remove_from_dock") if it.pinned else t("keep_in_dock"), lambda: self._pin(it, not it.pinned))
+            elif it.kind == "win":
+                add(t("keep_in_dock"), lambda: self._pin_win(it))
             if it.windows:
                 m.append(Gtk.SeparatorMenuItem())
                 add(t("quit"), lambda: [wd.close(ts()) for wd in it.wins])
@@ -624,6 +629,25 @@ class Dock(Gtk.Window):
         wd = Wnck.Window.get(xid)
         if wd is not None:
             getattr(wd, what)(Gtk.get_current_event_time())
+
+    def _pin_win(self, it):
+        """.desktop'u olmayan uygulamayı Dock'ta tut: komut satırından bir .desktop üretilir
+        (~/.local/share/applications/liquid-*.desktop), sonra normal sabitli uygulama olur."""
+        wins = it.wins
+        did = apps.make_desktop(wins[0]) if wins else None
+        if did is None:
+            return
+        self.keys.append(did)
+        save_items(self.keys)
+
+        def again(tries=[6]):                    # GIO yeni .desktop dosyasını biraz sonra görür
+            if apps.info(did) is None and tries[0] > 0:
+                tries[0] -= 1
+                return True
+            self.index = apps.AppIndex()
+            self.refresh()
+            return False
+        GLib.timeout_add(300, again)
 
     def _pin(self, it, on):
         if on and it.key not in self.keys:
@@ -638,11 +662,10 @@ class Dock(Gtk.Window):
 def main():
     if not daemon.claim("dock"):
         return
-    css = Gtk.CssProvider()
-    from .applemenu import MENU_CSS
-    css.load_from_data(MENU_CSS.encode())
-    Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_USER + 10)
+    from .applemenu import install_css
+    install_css("menu")
     d = Dock()
+    design.on_theme_change(d.queue_draw)
     daemon.on_signal(signal.SIGUSR2, d.fs.check)          # bar: macOS tam ekranı değişti
     d.connect("destroy", Gtk.main_quit)
     d.show_all()
