@@ -71,7 +71,7 @@ macbook/
 12. [x] `session.py` + `ctl.py` + `bin/liquid` + autostart + `install.sh` / `uninstall.sh`
     (her değiştirilen xfconf özelliğinin eski değeri backup/values.tsv'de; uninstall sadece onları döndürür)
 13. [x] Tam ekran görüntüsü al, PNG ile yan yana karşılaştır, farkları listele ve kapat
-14. [ ] Kullanıcıya göster
+14. [x] Kullanıcıya göster (16:43 ekran görüntüsü)
 
 ## 5. Öğrenilen tuzaklar (önceki denemelerden — TEKRARLAMA)
 - **Daemon'ları benim Bash aracımdan başlatma**: araç bitince süreçler ölüyor. Kalıcı süreçler
@@ -106,9 +106,10 @@ macbook/
   Müzik=Rhythmbox, Ayarlar=XFCE Ayarlar Yöneticisi, App Store=mintinstall, Terminal=xfce4-terminal.
   Kurulu olmayanlar dock'a konmaz.
 
-## 6b. Kullanıcıya sorulacaklar (sona bırakıldı)
-- Masaüstü klasör simgeleri widget'ların arkasında kalıyor; hedefte masaüstü simgesi yok →
-  gizlensin mi (xfdesktop `/desktop-icons/style 0`), yoksa widget'lar başka yere mi?
+## 6b. Kullanıcı kararları
+- Masaüstü simgeleri: **kalsın** ("macOS'ta klasörler her yerde olabilir"). macOS gibi sağ üstten
+  dizilsin → `xfce4-desktop /desktop-icons/gravity = 2` (install.sh'de, values.tsv ile geri alınır).
+  Simgeler serbestçe sürüklenebilir. Gizleme YOK.
 
 ## 7. Durum
 - Şu an: adım 5–6. Masaüstü: kullanıcının orijinal XFCE düzeni (alt panel, Mint-L-Teal,
@@ -141,6 +142,11 @@ macbook/
   kullanıcının Claude penceresi "her zaman üstte" ve xfwm4 fullscreen'de bizim ABOVE bayrağını
   düşürüyordu → launcher artık DIALOG tipi + ekran boyutu (fullscreen yok); hepsine show sonrası
   set_keep_above + raise. Doğrulandı.
+
+- 16:43 — Masaüstü simgeleri sağ üste dizildi (gravity 2 + xfdesktop --arrange).
+- Açık noktalar: masaüstü simge etiketleri açık gökyüzünde zor okunuyor (xfdesktop yazısına gölge
+  için kullanıcının gtk.css'ine dokunmak gerekir → sorulmadan YAPMA); global menüler için oturumu
+  kapatıp açmak gerekiyor; GTK uygulama pencerelerinin trafik ışıkları ekranda henüz gözle doğrulanmadı.
 
 ## 5b. Yeni tuzaklar
 - xfwm4: fullscreen() olan pencerede _NET_WM_STATE_ABOVE düşüyor; kullanıcının "her zaman üstte"
