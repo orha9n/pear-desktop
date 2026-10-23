@@ -41,6 +41,7 @@ if [ "${1:-}" = "--themes" ]; then
   rm -rf "$HOME/.local/share/icons/MacTahoe" "$HOME/.local/share/icons/MacTahoe-light" \
          "$HOME/.local/share/icons/MacTahoe-dark" "$HOME/.local/share/icons/WhiteSur-cursors" \
          "$HOME/.local/share/backgrounds/liquid"
+  sudo rm -f /usr/share/xfce4/backdrops/liquid-golden-gate.jpg
   echo "   ✓ kullanıcı temaları silindi (sistem teması için: sudo rm -rf /usr/share/themes/MacTahoe-*)"
 fi
 echo -e "\n\033[1;32m✓ Geri alındı.\033[0m"

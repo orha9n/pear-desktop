@@ -79,8 +79,13 @@ ok "trafik ışıkları solda, başlık ortada, Inter"
 
 # ---------- 4) duvar kâğıdı ----------
 say "4/7  Duvar kâğıdı (Golden Gate)"
-WPD="$HOME/.local/share/backgrounds/liquid"; mkdir -p "$WPD"
-cp "$ROOT/assets/wallpaper/golden-gate.jpg" "$WPD/golden-gate.jpg"
+# Mint duvar kâğıtlarının YANINA koy: XFCE Masaüstü ayarları yalnızca geçerli resmin klasörünü
+# listeler; ayrı klasörde dururken Mint'in kendi duvar kâğıtları listede görünmüyordu.
+WP=/usr/share/xfce4/backdrops/liquid-golden-gate.jpg
+if [ ! -f "$WP" ] && ! sudo cp "$ROOT/assets/wallpaper/golden-gate.jpg" "$WP"; then
+  WP="$HOME/.local/share/backgrounds/liquid/golden-gate.jpg"; mkdir -p "$(dirname "$WP")"
+  cp "$ROOT/assets/wallpaper/golden-gate.jpg" "$WP"
+fi
 PROPS="$(xfconf-query -c xfce4-desktop -l 2>/dev/null | grep -E '/last-image$' || true)"
 for mon in $(xrandr | awk '/ connected/{print $1}'); do
   for ws in 0 1 2 3; do PROPS="$PROPS
@@ -88,7 +93,7 @@ for mon in $(xrandr | awk '/ connected/{print $1}'); do
 done
 echo "$PROPS" | sort -u | while read -r p; do
   [ -n "$p" ] || continue
-  xset xfce4-desktop "$p" string "$WPD/golden-gate.jpg"
+  xset xfce4-desktop "$p" string "$WP"
   xset xfce4-desktop "${p%/last-image}/image-style" int 5
 done
 ok "assets/wallpaper/golden-gate.jpg (Levi Clancy, CC BY-SA 4.0)"

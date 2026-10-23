@@ -150,8 +150,14 @@ macbook/
   için kullanıcının gtk.css'ine dokunmak gerekir → sorulmadan YAPMA); global menüler için oturumu
   kapatıp açmak gerekiyor; GTK uygulama pencerelerinin trafik ışıkları ekranda henüz gözle doğrulanmadı.
 
+- 16:49 — Kullanıcı: "eski Linux Mint arkaplanları nerede" → silinmemişlerdi; XFCE Masaüstü ayarları
+  sadece geçerli resmin klasörünü listeliyor. Duvar kâğıdı /usr/share/xfce4/backdrops/
+  liquid-golden-gate.jpg'ye taşındı (sudo); install/uninstall güncellendi. Widget'ları ve dock'tan
+  Chrome/Müzik'i kullanıcı KENDİSİ kaldırdı → geri koyma.
+
 ## 5b. Yeni tuzaklar
 - xfwm4: fullscreen() olan pencerede _NET_WM_STATE_ABOVE düşüyor; kullanıcının "her zaman üstte"
   pencereleri öne geçer. Tam ekran katmanları için DIALOG + ekran boyutu kullan.
+- Duvar kâğıdını ayrı klasöre koyma: XFCE ayarlarında diğer duvar kâğıtları kaybolmuş görünür.
 - Bekçi (session.py) bir bileşeni öldürünce 5 sn içinde YENİ koduyla açar → kod değişince
   `kill $(cat $XDG_RUNTIME_DIR/liquid/<ad>.pid)` yeterli.
