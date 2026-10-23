@@ -214,8 +214,7 @@ class Bar(Gtk.Window):
         self.wnck = Wnck.Screen.get_default()
         self.wnck.force_update()
         self.index = apps.AppIndex()
-        self.cur = None
-        self.window = None
+        self.cur = None                 # (XID, .desktop) — Wnck.Window nesnesi SAKLANMAZ (bkz. _window)
         self.dbus_client = None
         self.gmodel = None
         self._open = False
@@ -393,12 +392,17 @@ class Bar(Gtk.Window):
         if key == self.cur:
             return False
         self.cur = key
-        self.window = w if key[0] else None
         if self._open:
             self._dirty = True
             return False
         self._rebuild()
         return False
+
+    def _window(self):
+        """Aktif uygulamanın penceresi (kapandıysa None). Wnck.Window'u özniteliğe koymak çökertir:
+        pencere kapanınca libwnck nesneyi yok eder, Python'un bıraktığı geç unref → segfault."""
+        xid = self.cur[0] if self.cur else None
+        return Wnck.Window.get(xid) if xid else None
 
     def _menus_closed(self, *_):
         self._open = False
@@ -427,7 +431,7 @@ class Bar(Gtk.Window):
         if xid is None:
             self._finder()
             return
-        nm = apps.name(did, self.window)
+        nm = apps.name(did, self._window())
         self.appitem.get_child().set_text(nm)
         self.appitem.set_submenu(self._app_menu(nm, did))
         props = gtk_menu_props(xid)
@@ -509,7 +513,7 @@ class Bar(Gtk.Window):
     def _app_menu(self, nm, did):
         m = Gtk.Menu()
         ts = Gtk.get_current_event_time
-        own = lambda: self._windows_of(did) or ([self.window] if self.window else [])  # noqa: E731
+        own = lambda: self._windows_of(did) or [w for w in (self._window(),) if w]  # noqa: E731
         m.append(item(t("about_app").format(nm), lambda: applemenu.about_app(nm, apps.info(did)),
                       sensitive=bool(did)))
         m.append(sep())
@@ -539,7 +543,7 @@ class Bar(Gtk.Window):
         fm.append(sep())
         fm.append(item(t("settings_dots"), lambda: sh_bg(["thunar-settings"]), "⌘,"))
         fm.append(sep())
-        fm.append(item(t("empty_trash") + "…", lambda: sh_bg(["gio", "trash", "--empty"]), "⇧⌘⌫"))
+        fm.append(item(t("empty_trash") + "…", applemenu.confirm_empty_trash, "⇧⌘⌫"))
         fm.show_all()
         fm.connect("show", lambda *_: setattr(self, "_open", True))
         self.appitem.set_submenu(fm)

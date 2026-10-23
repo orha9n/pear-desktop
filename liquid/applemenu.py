@@ -156,10 +156,25 @@ def _card_window(width):
     prov.load_from_data(_CARD_CSS)
     Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), prov,
                                              Gtk.STYLE_PROVIDER_PRIORITY_USER + 20)
-    w.connect("draw", lambda wd, cr: (cr.set_source_rgba(0, 0, 0, 0), cr.set_operator(0), cr.paint(),
-                                      cr.set_operator(2), False)[-1])
+    w.connect("draw", _card_bg)
     w.connect("key-press-event", lambda wd, e: wd.destroy() if e.keyval == Gdk.KEY_Escape else None)
     return w
+
+
+def _card_bg(wd, cr):
+    """app_paintable pencerede GTK arka planı çizmez (CSS'teki #lcard rengi görünmüyordu, kart
+    saydamdı) → köşeleri saydam bırakıp kartı kendimiz çiziyoruz; çocuklar üstüne çizilir."""
+    cr.set_operator(0)                                  # CLEAR
+    cr.paint()
+    cr.set_operator(2)                                  # OVER
+    w, h = wd.get_allocated_width(), wd.get_allocated_height()
+    design.rrect(cr, 0.5, 0.5, w - 1, h - 1, 22)
+    cr.set_source_rgba(246 / 255, 246 / 255, 248 / 255, 0.97)
+    cr.fill_preserve()
+    cr.set_source_rgba(0, 0, 0, 0.08)
+    cr.set_line_width(1)
+    cr.stroke()
+    return False
 
 
 def _icon(name, size):
@@ -169,35 +184,53 @@ def _icon(name, size):
         return Gtk.Image()
 
 
-def confirm(kind, seconds=60):
-    qk, bk, cmd = _ACTIONS[kind]
-    w = _card_window(260)
+def _alert(icon, question, detail, action_label, cmd, width=260):
+    """macOS uyarı kartı: simge, soru, açıklama, [Vazgeç] [eylem]. (pencere, açıklama etiketi, go)"""
+    w = _card_window(width)
     box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
     for m in ("top", "bottom", "start", "end"):
         getattr(box, f"set_margin_{m}")(18)
     w.add(box)
-    box.pack_start(_icon("system-shutdown" if kind != "logout" else "system-log-out", 56), False, False, 2)
-    q = Gtk.Label(label=t(qk), wrap=True, justify=Gtk.Justification.CENTER, max_width_chars=30)
+    box.pack_start(_icon(icon, 56), False, False, 2)
+    q = Gtk.Label(label=question, wrap=True, justify=Gtk.Justification.CENTER, max_width_chars=30)
     q.get_style_context().add_class("title")
     box.pack_start(q, False, False, 0)
-    d = Gtk.Label(label=t("q_detail").format(seconds), wrap=True, justify=Gtk.Justification.CENTER,
-                  max_width_chars=34)
+    d = Gtk.Label(label=detail, wrap=True, justify=Gtk.Justification.CENTER, max_width_chars=34)
     d.get_style_context().add_class("detail")
     box.pack_start(d, False, False, 0)
     row = Gtk.Box(spacing=8, homogeneous=True)
     row.set_margin_top(10)
     cancel = Gtk.Button(label=t("cancel"))
     cancel.get_style_context().add_class("secondary")
-    act = Gtk.Button(label=t(bk))
+    act = Gtk.Button(label=action_label)
     act.get_style_context().add_class("primary")
     row.pack_start(cancel, True, True, 0)
     row.pack_start(act, True, True, 0)
     box.pack_start(row, False, False, 0)
-    left = {"n": seconds}
 
     def go(*_):
         sh_bg(cmd)
         w.destroy()
+    cancel.connect("clicked", lambda *_: w.destroy())
+    act.connect("clicked", go)
+    act.set_can_default(True)
+    w.set_default(act)
+    w.show_all()
+    act.grab_focus()
+    return w, d, go
+
+
+def confirm_empty_trash():
+    """Çöpü boşaltmak geri alınamaz → her zaman sor (geri sayım YOK, macOS gibi)."""
+    _alert("user-trash-full", t("q_empty_trash"), t("q_no_undo"), t("empty_trash"),
+           ["gio", "trash", "--empty"], width=320)
+
+
+def confirm(kind, seconds=60):
+    qk, bk, cmd = _ACTIONS[kind]
+    w, d, go = _alert("system-shutdown" if kind != "logout" else "system-log-out", t(qk),
+                      t("q_detail").format(seconds), t(bk), cmd)
+    left = {"n": seconds}
 
     def tick():
         if not w.get_visible():
@@ -208,13 +241,7 @@ def confirm(kind, seconds=60):
             return False
         d.set_text(t("q_detail").format(left["n"]))
         return True
-    cancel.connect("clicked", lambda *_: w.destroy())
-    act.connect("clicked", go)
-    act.set_can_default(True)
-    w.set_default(act)
     GLib.timeout_add_seconds(1, tick)
-    w.show_all()
-    act.grab_focus()
 
 
 # ----------------------------- Bu Mac Hakkında -----------------------------

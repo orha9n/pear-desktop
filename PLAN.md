@@ -161,3 +161,16 @@ macbook/
 - Duvar kâğıdını ayrı klasöre koyma: XFCE ayarlarında diğer duvar kâğıtları kaybolmuş görünür.
 - Bekçi (session.py) bir bileşeni öldürünce 5 sn içinde YENİ koduyla açar → kod değişince
   `kill $(cat $XDG_RUNTIME_DIR/liquid/<ad>.pid)` yeterli.
+
+- 20:3x — problems.md yazıldı (35 madde). Düzeltilenler: (1) Wnck segfault — bar/dock Wnck.Window'u
+  öznitelikte tutmuyor, XID tutuyor; (2) çöp boşaltma onayı (`applemenu.confirm_empty_trash`);
+  (3) widget süreci widget'sız da ayakta, SIGUSR1 yutuluyor; uyarı kartlarının saydam arka planı.
+
+## 5c. Yeni tuzaklar
+- **Wnck.Window'u Python özniteliğinde/listede SAKLAMA**: pencere kapanınca libwnck nesneyi yok eder,
+  Python referansı sonradan bırakınca `g_object_unref → g_hash_table_remove` segfault (bar+dock aynı
+  anda düşüyordu). XID sakla, `Wnck.Window.get(xid)` ile o an al.
+- İşleyicisi olmayan süreçlere SIGUSR1 gönderme: varsayılan davranış süreci öldürmek.
+- `set_app_paintable(True)` pencerede GTK CSS arka planı çizilmez → arka planı draw'da kendin çiz.
+- Bileşen kodunu test ederken pencereyi kullanıcının ekranında açma/tıklama: kullanıcı aynı anda
+  masaüstünü kullanıyor olabilir.

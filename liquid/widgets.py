@@ -11,6 +11,7 @@ import calendar
 import configparser
 import math
 import os
+import signal
 
 import cairo
 import gi
@@ -330,14 +331,13 @@ def main():
     css.load_from_data(MENU_CSS.encode())
     Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_USER + 10)
     cp = conf()
-    wins = []
     for cls in (CalendarWidget, ClockWidget, PhotoWidget):
         if cp.get(cls.kind, "hidden", fallback="0") != "1":
-            w = cls()
-            w.show_all()
-            wins.append(w)
-    if not wins:
-        return
+            cls().show_all()
+    # Görünür widget olmasa da süreç AYAKTA kalır: çıkarsa oturum bekçisi 5 sn'de bir yeniden başlatıp
+    # sonsuz döngüye giriyordu. SIGUSR1 (menü çubuğunda saate tıklama) işleyicisiz kalırsa varsayılan
+    # davranışla süreci öldürür → şimdilik zararsızca yutulur.
+    daemon.on_signal(signal.SIGUSR1, lambda: None)
     Gtk.main()
 
 

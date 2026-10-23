@@ -65,7 +65,7 @@ class Item:
         self.kind = kind            # app | apps | win | folder | trash | sep
         self.key = key              # .desktop kimliği / klasör yolu / pencere sınıfı
         self.info, self.name, self.icon = info, name, icon
-        self.windows = []
+        self.windows = []           # XID'ler — Wnck.Window nesnesi SAKLANMAZ (bkz. wins)
         self.pinned = False
         self.bounce_t0 = self.bounce_until = 0.0
         self.surface = None
@@ -74,6 +74,12 @@ class Item:
     @property
     def running(self):
         return bool(self.windows)
+
+    @property
+    def wins(self):
+        """Hâlâ açık pencereler. Wnck.Window'u öznitelikte tutmak çökertir: pencere kapanınca libwnck
+        nesneyi yok eder, Python'un sonradan bıraktığı unref → segfault (g_hash_table_remove)."""
+        return [w for w in map(Wnck.Window.get, self.windows) if w is not None]
 
 
 class Dock(Gtk.Window):
@@ -179,7 +185,7 @@ class Dock(Gtk.Window):
                     continue
                 it = Item("app", key, ai, apps.name(key), ai.get_icon())
             it.pinned = True
-            it.windows = running.pop(key, [])
+            it.windows = [w.get_xid() for w in running.pop(key, [])]
             items.append(it)
         for key, wins in running.items():
             it = old.get(("app", key))
@@ -189,11 +195,11 @@ class Dock(Gtk.Window):
                     continue
                 it = Item("app", key, ai, apps.name(key), ai.get_icon())
             it.pinned = False
-            it.windows = wins
+            it.windows = [w.get_xid() for w in wins]
             items.append(it)
         for key, wins in extra.items():
             it = old.get(("win", key)) or Item("win", key, None, key, wins[0].get_icon())
-            it.windows = wins
+            it.windows = [w.get_xid() for w in wins]
             items.append(it)
         items.append(old.get(("sep", None)) or Item("sep"))
         dl = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD) or os.path.expanduser("~/Downloads")
@@ -507,14 +513,18 @@ class Dock(Gtk.Window):
         elif it.kind == "folder":
             sh_bg(["thunar", it.key])
         elif it.running:
+            wins = it.wins
+            if not wins:
+                return
             active = self.wnck.get_active_window()
-            if active in it.windows and len(it.windows) == 1:
+            mine = active is not None and active.get_xid() in it.windows
+            if mine and len(wins) == 1:
                 active.minimize()
                 return
-            for wd in it.windows:
+            for wd in wins:
                 if wd.is_minimized():
                     wd.unminimize(ts)
-            (active if active in it.windows else it.windows[-1]).activate(ts)
+            (active if mine else wins[-1]).activate(ts)
         elif it.info is not None:
             self.launch(it)
 
@@ -525,7 +535,7 @@ class Dock(Gtk.Window):
             self._anim()
 
     def _menu(self, it, e):
-        from .applemenu import MENU_CSS  # noqa: F401  (menü stili bu süreçte yüklü olsun)
+        from .applemenu import MENU_CSS, confirm_empty_trash  # noqa: F401  (menü stili bu süreçte yüklü olsun)
         m = Gtk.Menu()
 
         def add(label, cb, sensitive=True):
@@ -537,12 +547,14 @@ class Dock(Gtk.Window):
         if it.kind == "trash":
             add(t("open"), lambda: sh_bg(["thunar", "trash:///"]))
             m.append(Gtk.SeparatorMenuItem())
-            add(t("empty_trash"), lambda: sh_bg(["gio", "trash", "--empty"]), bool(self._trash_full))
+            add(t("empty_trash") + "…", confirm_empty_trash, bool(self._trash_full))
         elif it.kind in ("folder", "apps"):
             add(t("open"), lambda: self.activate(it, ts()))
         else:
-            for wd in it.windows:
-                add((wd.get_name() or it.name)[:60], lambda wd=wd: wd.activate(ts()))
+            for xid in it.windows:
+                wd = Wnck.Window.get(xid)
+                if wd is not None:
+                    add((wd.get_name() or it.name)[:60], lambda x=xid: self._win_do(x, "activate"))
             if it.windows:
                 m.append(Gtk.SeparatorMenuItem())
             if it.info is not None:
@@ -554,10 +566,15 @@ class Dock(Gtk.Window):
                 add(t("remove_from_dock") if it.pinned else t("keep_in_dock"), lambda: self._pin(it, not it.pinned))
             if it.windows:
                 m.append(Gtk.SeparatorMenuItem())
-                add(t("quit"), lambda: [wd.close(ts()) for wd in list(it.windows)])
+                add(t("quit"), lambda: [wd.close(ts()) for wd in it.wins])
         m.show_all()
         m.attach_to_widget(self, None)
         m.popup_at_pointer(e)
+
+    def _win_do(self, xid, what):
+        wd = Wnck.Window.get(xid)
+        if wd is not None:
+            getattr(wd, what)(Gtk.get_current_event_time())
 
     def _pin(self, it, on):
         if on and it.key not in self.keys:
