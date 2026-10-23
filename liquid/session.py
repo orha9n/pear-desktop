@@ -10,6 +10,7 @@ import os
 import signal
 import time
 
+from . import compositor
 from .core import daemon
 
 COMPONENTS = ("bar", "dock", "widgets", "launcher", "controlcenter", "spotlight")
@@ -59,8 +60,10 @@ def main():
     signal.signal(signal.SIGTERM, lambda *a: (stop_all(), os._exit(0)))
     daemon.note("oturum başladı")
     seen = {}
+    keeper = compositor.Keeper()
     while True:
         stop_xfce_panel()
+        keeper.tick(daemon.note)
         for name in COMPONENTS:
             pid = daemon.running(name)
             if pid is None:

@@ -20,6 +20,7 @@ gi.require_version("Gdk", "3.0")
 gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, Gdk, GdkPixbuf, Gio, GLib, Pango, PangoCairo  # noqa: E402
 
+from . import compositor  # noqa: E402
 from .core import design, wallpaper, daemon, apps, screen_geometry, restart_on_monitor_change  # noqa: E402
 from .core.i18n import t, fold  # noqa: E402
 
@@ -44,6 +45,7 @@ class Launcher(Gtk.Window):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.set_name("lapps")
         self.set_title("Liquid Apps")
+        compositor.mark(self)
         self.set_decorated(False)
         self.set_skip_taskbar_hint(True)
         self.set_skip_pager_hint(True)
@@ -161,6 +163,9 @@ class Launcher(Gtk.Window):
         return max(1, math.ceil(len(self.view) / PER))
 
     def _bg(self):
+        if compositor.active():                     # picom arkadakileri gerçekten bulanıklaştırır
+            self.bg, self._wp_key = None, None
+            return
         p, st, mt = wallpaper.current()
         if (p, st, mt) != self._wp_key:
             self._wp_key = (p, st, mt)
@@ -200,7 +205,9 @@ class Launcher(Gtk.Window):
         cr.set_source_rgba(0, 0, 0, 0)
         cr.paint()
         cr.set_operator(cairo.OPERATOR_OVER)
-        if self.bg is not None:
+        if compositor.active():
+            cr.set_source_rgba(0, 0, 0, 0.22 * self.alpha)
+        elif self.bg is not None:
             cr.set_source_surface(self.bg, 0, 0)
             cr.paint_with_alpha(self.alpha)
             cr.set_source_rgba(0, 0, 0, 0.18 * self.alpha)

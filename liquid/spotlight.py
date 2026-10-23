@@ -24,6 +24,7 @@ gi.require_version("Gdk", "3.0")
 gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, Gdk, GLib, Gio, GdkPixbuf, Pango, PangoCairo  # noqa: E402
 
+from . import compositor  # noqa: E402
 from .core import design, wallpaper, daemon, apps, screen_geometry, restart_on_monitor_change  # noqa: E402
 from .core.i18n import t, fold  # noqa: E402
 
@@ -102,6 +103,7 @@ class Spotlight(Gtk.Window):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.set_name("lspot")
         self.set_title("Liquid Spotlight")
+        compositor.mark(self)
         self.set_decorated(False)
         self.set_skip_taskbar_hint(True)
         self.set_skip_pager_hint(True)
@@ -163,8 +165,9 @@ class Spotlight(Gtk.Window):
         x = self.mx + (self.mw - W) // 2 - self.sh
         y = self.my + int(self.mh * 0.20) - self.sh
         self.move(x, y)
-        self.backdrop = wallpaper.region(self.mw, self.mh, x + self.sh, y + self.sh, W,
-                                         BAR + MAXROWS * ROW + 16, blur=30)
+        if not compositor.active():                          # duvar kâğıdı kopyası yalnız picom yokken
+            self.backdrop = wallpaper.region(self.mw, self.mh, x + self.sh, y + self.sh, W,
+                                             BAR + MAXROWS * ROW + 16, blur=30)
         self.area.queue_draw()
 
     def toggle(self):
@@ -302,10 +305,12 @@ class Spotlight(Gtk.Window):
         cr.set_source_rgba(0, 0, 0, 0)
         cr.paint()
         cr.set_operator(cairo.OPERATOR_OVER)
-        cr.translate(self.sh, self.sh)
         r = BAR / 2 if not self.results else 24
-        design.liquid_glass(cr, 0, 0, W, self.H, r, backdrop=self.backdrop, tint=design.glass_tint(0.55),
-                            dark=design.dark())
+        real = compositor.active()
+        compositor.shape(self, self.sh, self.sh, W, self.H, r)
+        cr.translate(self.sh, self.sh)
+        design.liquid_glass(cr, 0, 0, W, self.H, r, backdrop=None if real else self.backdrop,
+                            tint=design.glass_tint(0.55), dark=design.dark(), shadow=not real)
         # büyüteç
         cr.set_line_width(2.2)
         cr.arc(30, BAR / 2 - 2, 8, 0, 6.2832)

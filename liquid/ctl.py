@@ -5,6 +5,7 @@
   python3 -m liquid.ctl status
   python3 -m liquid.ctl fullscreen            (etkin pencere tam ekran aç/kapat — ⌃⌘F)
   python3 -m liquid.ctl app quit|hide|hide-others|minimize   (⌘Q ⌘H ⌥⌘H ⌘M)
+  python3 -m liquid.ctl compositor [picom|xfwm]   (gerçek cam: picom; geri: xfwm)
 """
 import os
 import signal
@@ -65,6 +66,9 @@ def main():
             subprocess.run(["wmctrl", "-r", ":ACTIVE:", "-b", "toggle,fullscreen"])
     elif cmd == "app" and len(sys.argv) > 2:
         app_action(sys.argv[2])
+    elif cmd == "compositor":
+        from . import compositor
+        compositor.main(sys.argv[2:])
     elif cmd == "status":
         for name in ("session",) + COMPONENTS:
             pid = daemon.running(name)

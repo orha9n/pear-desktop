@@ -66,6 +66,8 @@ Ayarlar: `~/.config/liquid/dock.ini` (`items`, `icon_size`, `magnify`), `~/.conf
   `coredumpctl info <PID>`.
 - Bir bileşeni yeni koduyla yeniden başlatmak: `kill $(cat $XDG_RUNTIME_DIR/liquid/<ad>.pid)` —
   bekçi 5 saniye içinde yeniden açar.
+- Gerçek cam picom ile çalışır (`liquid compositor` durum, `liquid compositor xfwm` XFCE'nin kendi
+  compositor'üne döner, `liquid compositor picom` yeniden açar). picom günlüğü: `~/.cache/liquid/picom.log`.
 - Bilinen sorunlar ve yapılacaklar: [problems.md](problems.md); tasarım kararları ve tuzaklar: [PLAN.md](PLAN.md).
 
 ## Lisans notları

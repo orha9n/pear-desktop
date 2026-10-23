@@ -12,6 +12,7 @@ say() { echo -e "\n\033[1;36m>> $*\033[0m"; }
 
 say "Liquid kapatılıyor"
 rm -f "$HOME/.config/autostart/liquid.desktop"
+"$ROOT/bin/liquid" compositor xfwm >/dev/null 2>&1 || true     # picom → xfwm4 compositor (önceki değer)
 "$ROOT/bin/liquid" stop >/dev/null 2>&1 || true
 sleep 1
 

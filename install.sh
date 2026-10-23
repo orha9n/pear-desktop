@@ -38,7 +38,7 @@ xfset() {   # kanal özellik tür değer [desen]
 say "1/7  Paketler"
 PKGS="python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-wnck-3.0 gir1.2-dbusmenu-glib-0.4 python3-pil
   x11-utils wmctrl xdotool playerctl brightnessctl pulseaudio-utils network-manager fonts-inter
-  appmenu-gtk2-module appmenu-gtk3-module appmenu-registrar sassc libxml2-utils git"
+  appmenu-gtk2-module appmenu-gtk3-module appmenu-registrar sassc libxml2-utils git picom"
 MISSING=""
 for p in $PKGS; do dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q "ok installed" || MISSING="$MISSING $p"; done
 if [ -z "$MISSING" ]; then ok "hepsi kurulu"
@@ -161,6 +161,11 @@ say "7/7  Başlatılıyor"
 sleep 1
 "$ROOT/bin/liquid" start
 sleep 4
+# gerçek cam: xfwm4 compositor'ü yerine picom (önceki değer ~/.config/liquid/compositor.json'da;
+# geri dönmek için: liquid compositor xfwm). İstemezsen: LIQUID_NO_PICOM=1 ./install.sh
+if [ "${LIQUID_NO_PICOM:-0}" != 1 ] && command -v picom >/dev/null; then
+  "$ROOT/bin/liquid" compositor picom || warn "picom başlamadı — xfwm4 compositor'ü kullanılıyor"
+fi
 "$ROOT/bin/liquid" status
 echo -e "\n\033[1;32m✓ Liquid kuruldu.\033[0m  Global menüler için bir kez oturumu kapatıp aç."
 echo "  Geri almak için: ./uninstall.sh"

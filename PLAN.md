@@ -227,3 +227,13 @@ macbook/
 - 21:4x — Bellek (26): bileşen başına ~270 MB'ın nedeni 9600×5400 progressive JPEG (libjpeg küçük ölçekte de
   tüm katsayıları tutuyor). draft + malloc_trim + ekran boyutlu PNG disk önbelleği (flock ile tek çözüm).
   PSS toplamı 1370 → 219 MB. Ölçümde RSS değil PSS'e (smaps_rollup) bak.
+- 21:5x — Gerçek cam (25): picom 10 (glx, dual_kawase). `liquid/compositor.py` + `liquid/picom.conf`; seçim
+  ~/.config/liquid/compositor.json (önceki xfwm4 use_compositing değeriyle), bekçi picom'u ayakta tutar,
+  2 dk'da 4 düşüşte xfwm4'e döner. Blur yalnız WM_WINDOW_ROLE=liquid-glass pencerelerde; bulanıklık/gölge
+  pencerenin X şeklini izler (compositor.shape). Dock henüz duvar kâğıdı kopyası.
+## 5g. Yeni tuzaklar
+- picom koşulunda olmayan özellik karşılaştırması yanlış döner: `role != 'x'` rolsüz pencerelerde de false
+  → "hariç tut" için `! role = 'x'` yaz.
+- Popen ile başlatılan picom kapanınca toplanmazsa zombi kalır, /proc/comm hâlâ "picom" der → setsid -f ile
+  başlat, /proc/PID/stat durumunda Z'yi say(ma).
+- compositor xfwm'e dönerken ÖNCE seçimi kaydet, sonra picom'u durdur (yoksa bekçi arada geri açar).
