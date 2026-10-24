@@ -84,7 +84,7 @@ class Glyph(Gtk.DrawingArea):
         k = self.kind
         if k == "apple":
             s = 17
-            apple_path(cr, (wd - s) / 2, cy - s / 2 - 0.5, s)
+            apple_path(cr, (wd - s) / 2, cy - s / 2, s)
             src()
             cr.fill()
         elif k == "battery":
