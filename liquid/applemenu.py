@@ -13,7 +13,7 @@ import subprocess
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gtk, Gdk, GLib  # noqa: E402
+from gi.repository import Gtk, Gdk, GLib, GObject  # noqa: E402
 
 from . import compositor
 from .core import design
@@ -80,6 +80,43 @@ def install_css(kind, priority=Gtk.STYLE_PROVIDER_PRIORITY_USER + 10):
     Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), prov, priority)
     design.on_theme_change(lambda: prov.load_from_data(make().encode()))
     _providers[kind] = prov
+    if kind == "menu":
+        forward_shortcut_keys()
+
+
+_last_key = [None]
+
+
+def _on_key(widget, event):
+    """Açık Gtk.Menu klavyeyi yakalar (X grab); XFCE kısayol servisi ses/Print tuşlarını göremez.
+    Bu sürece gelen XF86*/Print basışını kullanıcının kendi xfconf komutuyla çalıştır."""
+    key = (event.time, event.hardware_keycode)
+    if key == _last_key[0]:                     # pencere → menü yayılımında hook birden çok tetiklenir
+        return True
+    km = Gdk.Keymap.get_for_display(Gdk.Display.get_default())
+    ok, kv, *_ = km.translate_keyboard_state(event.hardware_keycode, 0, event.group)
+    kv = kv if ok else event.keyval
+    xf86 = 0x1008FF00 <= kv <= 0x1008FFFF           # medya tuşları; GDK adı "XF86" önekini atıyor
+    if not (xf86 or kv == Gdk.KEY_Print):
+        return True
+    _last_key[0] = key
+    accel = Gtk.accelerator_name(kv, event.state & Gtk.accelerator_get_default_mod_mask())
+    if xf86 and not accel.split(">")[-1].startswith("XF86"):
+        head, _, base = accel.rpartition(">")
+        accel = f"{head}{'>' if head else ''}XF86{base}"
+    try:
+        cmd = subprocess.run(["xfconf-query", "-c", "xfce4-keyboard-shortcuts", "-p",
+                              f"/commands/custom/{accel}"], capture_output=True, text=True,
+                             timeout=2).stdout.strip()
+    except Exception:
+        cmd = ""
+    if cmd:
+        sh_bg(["sh", "-c", cmd])
+    return True
+
+
+def forward_shortcut_keys():
+    GObject.add_emission_hook(Gtk.Widget, "key-press-event", _on_key)
 
 
 def sh_bg(cmd):

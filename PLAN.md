@@ -238,3 +238,13 @@ macbook/
 - Popen ile başlatılan picom kapanınca toplanmazsa zombi kalır, /proc/comm hâlâ "picom" der → setsid -f ile
   başlat, /proc/PID/stat durumunda Z'yi say(ma).
 - compositor xfwm'e dönerken ÖNCE seçimi kaydet, sonra picom'u durdur (yoksa bekçi arada geri açar).
+- 24.10 — Kullanıcı: (1) açılır menülerde yazı beyaz + siyah gölge; (2) menü açıkken ses/Print tuşları
+  çalışmıyor. (1) GTK3'te menubar'a bağlı popup'ın CSS düğümü tetikleyici menuitem'in ALTINDA →
+  `#lbar menubar > menuitem label` alt menü etiketlerine de uyuyordu (ID özgüllüğü menu_css'i eziyordu).
+  Bar seçicileri `> label` / `> image` yapıldı. (2) Açık Gtk.Menu klavyeyi X grab'ıyla alıyor, xfsettingsd
+  kısayolu göremiyor → `applemenu.forward_shortcut_keys()` (install_css("menu") ile bar/dock/widgets'ta):
+  bu sürece gelen XF86*/Print basışı kullanıcının kendi `/commands/custom/<accel>` komutuyla çalışır
+  (kısayollar değiştirilmedi). Başka uygulamaların menüleri (tepsi, Electron) açıkken hâlâ çalışmaz.
+## 5h. Yeni tuzaklar
+- Alt menüye sızmasın: bar CSS'inde torun (` label`) değil çocuk (`> label`) seçici kullan; text-shadow kalıtsal.
+- GDK 3.24'te `keyval_name(XF86AudioRaiseVolume)` = "AudioRaiseVolume" (önek yok); xfconf "XF86…" bekler.
