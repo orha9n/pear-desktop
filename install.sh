@@ -154,6 +154,9 @@ Terminal=false
 X-GNOME-Autostart-enabled=true
 EOF
 ok "~/.config/autostart/liquid.desktop"
+# masaüstü sağ tık → "Widget'ları Düzenle…" (Thunar özel eylemi; yalnız bizim eylemimiz eklenir/silinir)
+[ -e "$HOME/.config/Thunar/uca.xml" ] && [ ! -e "$BK/uca.xml.orig" ] && cp -a "$HOME/.config/Thunar/uca.xml" "$BK/uca.xml.orig"
+PYTHONPATH="$ROOT" python3 -m liquid.desktopmenu install && ok "masaüstü menüsü: Widget'ları Düzenle…"
 
 # ---------- 7) başlat ----------
 say "7/7  Başlatılıyor"

@@ -258,3 +258,8 @@ macbook/
   "−" rozeti (tıkla = kaldır). Widget sağ tık → "Widget'ları Düzenle…" de galeriyi açar.
   Bildirimler: xfce4-notifyd geçmişi ~/.cache/xfce4/notifyd/log.sqlite (yalnız OKU).
   Yapılmayan: masaüstü (xfdesktop) sağ tık menüsüne öğe ekleme (xfdesktop'un menüsü).
+- 24.10 — Kullanıcı "ekleyebilirsin": (a) Bildirim Merkezi'nde bildirimlerin altında canlı widget'lar (Takvim+Saat yan
+  yana, Fotoğraf altta, panel genişliğine ölçekli); (b) masaüstü sağ tık → "Widget'ları Düzenle…": Thunar özel eylemi
+  (uca.xml, unique-id liquid-edit-widgets, desen = masaüstü klasörünün adı, yalnız klasör) → `liquid widgets edit`
+  → widgets'a SIGUSR2 → galeri. `liquid/desktopmenu.py install|remove`; ilk yedek backup/uca.xml.orig;
+  install.sh 6. adım / uninstall.sh. xfdesktop uca.xml'i yalnız açılışta okur → bir kez yeniden başlatıldı.

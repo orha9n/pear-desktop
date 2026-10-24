@@ -48,6 +48,8 @@ if [ -f "$G4/.liquid" ]; then
   echo "   ✓ GTK4 teması kaldırıldı"
 fi
 
+PYTHONPATH="$ROOT" python3 -m liquid.desktopmenu remove && echo "   ✓ masaüstü menüsünden Widget'ları Düzenle… kaldırıldı"
+
 XP="$HOME/.xprofile"
 [ -f "$XP" ] && sed -i '/# LIQUID-START/,/# LIQUID-END/d' "$XP" && echo "   ✓ ~/.xprofile temizlendi"
 

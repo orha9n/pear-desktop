@@ -410,13 +410,14 @@ class Gallery(Gtk.Window):
             w = self.previews.get(kind) or self.previews.setdefault(kind, self.classes[kind]())
         return w
 
-    def _preview(self, kind):
+    def _preview(self, kind, k=PREVIEW):
+        """Widget'ın canlı küçük kopyası (galeri, Bildirim Merkezi)."""
         w = self._sample(kind)
         da = Gtk.DrawingArea()
-        da.set_size_request(int(w.W * PREVIEW), int(w.H * PREVIEW))
+        da.set_size_request(round(w.W * k), round(w.H * k))
 
         def draw(_da, cr):
-            cr.scale(PREVIEW, PREVIEW)
+            cr.scale(k, k)
             self._sample(kind).paint(cr)
         da.connect("draw", draw)
         return da
@@ -538,6 +539,7 @@ class NotificationCenter(Gtk.Window):
         for m in ("top", "bottom", "start", "end"):
             getattr(self.box, f"set_margin_{m}")(12)
         self.add(self.box)
+        GLib.timeout_add(1000, lambda: (self.get_visible() and self.queue_draw(), True)[1])   # saat widget'ı
 
     def _rebuild(self):
         from .applemenu import _icon
@@ -582,6 +584,14 @@ class NotificationCenter(Gtk.Window):
                     col.pack_start(lb, False, False, 0)
             card.pack_start(col, True, True, 0)
             self.box.pack_start(card, False, False, 0)
+        # macOS: bildirimlerin altında widget'lar (küçükler yan yana, orta boy altta), panel genişliğine sığar
+        k = (self.W - 24) / (2 * S + G)
+        small = Gtk.Box(spacing=round(G * k))
+        small.set_margin_top(6)
+        for kind in ("calendar", "clock"):
+            small.pack_start(self.gallery._preview(kind, k), False, False, 0)
+        self.box.pack_start(small, False, False, 0)
+        self.box.pack_start(self.gallery._preview("photo", k), False, False, round(G * k / 2 - 4))
         ed = Gtk.Button(label=t("edit_widgets"))
         ed.get_style_context().add_class("secondary")
         ed.set_halign(Gtk.Align.CENTER)
@@ -622,6 +632,7 @@ def main():
     center = NotificationCenter(gallery)
     design.on_theme_change(lambda: [w.queue_draw() for w in live.values()])
     daemon.on_signal(signal.SIGUSR1, center.toggle)
+    daemon.on_signal(signal.SIGUSR2, gallery.show_gallery)     # masaüstü sağ tık → Widget'ları Düzenle…
     if "--show" in sys.argv:
         GLib.timeout_add(150, lambda: (gallery.show_gallery(), False)[1])
     Gtk.main()

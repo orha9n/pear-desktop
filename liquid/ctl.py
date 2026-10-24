@@ -6,6 +6,7 @@
   python3 -m liquid.ctl fullscreen            (etkin pencere tam ekran aç/kapat — ⌃⌘F)
   python3 -m liquid.ctl app quit|hide|hide-others|minimize   (⌘Q ⌘H ⌥⌘H ⌘M)
   python3 -m liquid.ctl compositor [picom|xfwm]   (gerçek cam: picom; geri: xfwm)
+  python3 -m liquid.ctl widgets edit           (Widget'ları Düzenle — masaüstü sağ tık menüsü)
 """
 import os
 import signal
@@ -66,6 +67,8 @@ def main():
             subprocess.run(["wmctrl", "-r", ":ACTIVE:", "-b", "toggle,fullscreen"])
     elif cmd == "app" and len(sys.argv) > 2:
         app_action(sys.argv[2])
+    elif cmd == "widgets" and sys.argv[2:] == ["edit"]:
+        daemon.signal_component("widgets", signal.SIGUSR2)
     elif cmd == "compositor":
         from . import compositor
         compositor.main(sys.argv[2:])
