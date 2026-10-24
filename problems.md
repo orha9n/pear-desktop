@@ -252,3 +252,63 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
   kullanılmayan içe aktarmalar temizlendi. pyflakes temiz.
 - Doğrulanamayan: tam ekranda fare ekranın altına inince dock'un belirmesi (fare kullanılmadan test edilemez).
 
+
+---
+
+## Tema analizi (24 Eki 19:50) — canlı ekran, süreçler, loglar, ayarlar, kod
+
+### A1. 🟠 Uygulama eşleme: 6 uygulama yanlış .desktop'a bağlanıyor (Thunar = "ikinci Finder")
+- **Kanıt:** Thunar penceresi açıkken dock'un sonunda ikinci bir Finder simgesi (noktalı) çıkıyor; ilk Finder'a
+  nokta gitmiyor. `AppIndex.desktop_for(Thunar)` → `thunar-bulk-rename.desktop`.
+- **Neden:** [core/apps.py](liquid/core/apps.py) `AppIndex` anahtarları `setdefault` ile dolduruyor; çalıştırılabilir
+  adı ("thunar") ilk görülen dosyaya (Toplu Yeniden Adlandır, `Exec=thunar --bulk-rename`) gidiyor, asıl
+  `thunar.desktop` kaybediyor.
+- **Etkilenen:** thunar → thunar-bulk-rename, mintupdate → mintupdate-kde, mintreport → kde4-mintreport,
+  mintwelcome → kde4-mintwelcome, mintstick → mintstick-format, xfce4-appfinder → xfce4-run.
+  Menü çubuğundaki uygulama adı ve Finder menüsü de bu pencerelerde yanlış.
+- **Öneri:** Dosya adından gelen anahtar (`thunar` ← `thunar.desktop`) ve StartupWMClass, Exec'ten gelen anahtarı ezsin.
+
+### A2. 🟠 Bildirim Merkezi hep boş kalacak: xfce4-notifyd bildirimleri kaydetmiyor
+- `~/.cache/xfce4/notifyd/log.sqlite` 0 satır; `xfce4-notifyd` kanalında `/notification-log` ayarı yok
+  (varsayılan: kayıt kapalı). Saate tıklayınca her zaman "Bildirim Yok" görünür.
+- **Öneri:** `/notification-log = true` (install.sh'de `xfset` ile, yedekli).
+
+### A3. 🟡 Bildirim balonları macOS'a benzemiyor
+- xfce4-notifyd teması `Default` (koyu gri dikdörtgen). macOS 26: sağ üstte, yuvarlak köşeli cam kart,
+  uygulama simgesi solda, başlık kalın. Liquid'in kart tasarımıyla tutarsız.
+- **Öneri:** `~/.local/share/themes/Liquid/xfce-notify-4.0/gtk.css` (açık/koyu) ve `/theme = Liquid`.
+
+### A4. 🟡 Pencere köşeleri köşeli
+- picom `corner-radius = 0`. MacTahoe xfwm4 teması yalnız üst köşeleri yuvarlıyor; alt köşeler ve kenarlıksız
+  uygulamalar (Claude, VS Code, Electron) tamamen köşeli. macOS 26'da tüm pencerelerin 4 köşesi yuvarlak.
+- **Öneri:** picom'da normal pencerelere `corner-radius ≈ 12`; dock/menü/tooltip/tam ekran/büyütülmüş hariç.
+
+### A5. 🟡 Cumartesi kısaltması "Cts" (macOS: "Cmt")
+- Menü çubuğu saati ve dock'taki Takvim ikonu glibc'nin `%a` kısaltmasını kullanıyor: "24 Eki Cts".
+  macOS Türkçe: Paz Pzt Sal Çar Per Cum **Cmt**. Diğer günler aynı.
+- **Öneri:** Türkçede gün kısaltmasını kendi tablomuzdan ver ([bar.py:485](liquid/bar.py:485), [dock.py:297](liquid/dock.py:297)).
+
+### A6. ⚪ Dock ayarları yalnız dosyadan
+- Otomatik gizleme, konum (sol/sağ/alt), boyut, büyütme macOS'ta Dock sağ tık menüsünde/Ayarlar'da;
+  Liquid'de otomatik gizleme ve konum hiç yok, boyut/büyütme yalnız `dock.ini`'de.
+
+### A7. ⚪ Küçük görünüm farkları
+- Pencere/menü açılışında solma yok (picom `fading = false`); macOS kısa bir geçiş kullanır.
+- Eş aralıklı yazı tipi `Ubuntu Mono 12` (macOS: SF Mono/Menlo benzeri).
+
+### Sistem (temadan bağımsız, bilgi için)
+- Açılışta Xorg iki kez çöküp üçüncüde açılıyor (19:03:47 ve :48, `FatalError` → `InitOutput`):
+  lightdm, AMD GPU (`/dev/dri/card1`) hazır olmadan X'i başlatıyor ("open /dev/dri/card0: No such file").
+  Açılışı ~1-2 sn geciktiriyor; Liquid'le ilgisi yok.
+
+### Kontrol edildi, sorun yok
+- Bugün çökme yok: bekçi kaydındaki yeniden başlatmaların hepsi benim düzeltme sonrası yeniden başlatmalarım;
+  `coredumpctl`'de bugün Python çökmesi yok. Loglarda son başlatmalardan beri hata yok.
+- Bellek (PSS) toplamı ~175 MB (bar 43, launcher 31, dock 27 …), picom 2 MB; CPU düşük (picom ~%2-3).
+- GPU hızlandırma açık (AMD Radeon 610M, glamor); picom glx ile çalışıyor.
+- Global menü kayıt servisi boşta kapanıyor ama çağrılınca açılıp kayıtları geri alıyor (Claude menüsü doğru).
+- Açık kalan eski maddeler: 22 (ikinci monitörde çubuk yok), 33 (marka riski).
+
+### Bu turda bakılamayan
+- Normal uygulama pencerelerinin başlık çubuğu (Claude penceresinin altında kaldı, ekrandan alınamadı),
+  Spotlight / Uygulamalar / Control Center görünümü bu turda yeniden incelenmedi.
