@@ -30,7 +30,7 @@ gi.require_version("Dbusmenu", "0.4")
 from gi.repository import Gtk, Gdk, GLib, Gio, Wnck, Dbusmenu  # noqa: E402
 
 from .core import design, wallpaper, daemon, apps, screen_geometry, set_strut, restart_on_monitor_change  # noqa: E402
-from .core.i18n import t  # noqa: E402
+from .core.i18n import t, weekday_short  # noqa: E402
 from . import applemenu, fullscreen  # noqa: E402
 from .glyphs import Glyph, battery_state  # noqa: E402
 from . import wifi  # noqa: E402
@@ -482,7 +482,7 @@ class Bar(Gtk.Window):
 
     def _tick_clock(self):
         now = GLib.DateTime.new_now_local()
-        self.clock.set_text(now.format("%-d %b %a %H:%M"))       # "1 Nis Çar 09:41"
+        self.clock.set_text(f"{now.format('%-d %b')} {weekday_short(now)} {now.format('%H:%M')}")   # "1 Nis Çar 09:41"
         GLib.timeout_add_seconds(max(1, 60 - now.get_second()), self._tick_clock)
         return False
 

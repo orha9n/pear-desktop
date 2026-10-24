@@ -27,7 +27,7 @@ gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, Gdk, GdkPixbuf, Gio, GLib, Wnck, Pango, PangoCairo  # noqa: E402
 
 from .core import design, wallpaper, daemon, apps, config_path, screen_geometry, set_strut, restart_on_monitor_change  # noqa: E402
-from .core.i18n import t  # noqa: E402
+from .core.i18n import t, weekday_short  # noqa: E402
 from . import fullscreen, compositor  # noqa: E402
 
 CONF = config_path("dock.ini")
@@ -294,7 +294,7 @@ class Dock(Gtk.Window):
         cr.set_line_width(max(1, size / 96))
         cr.stroke()
         now = GLib.DateTime.new_now_local()
-        for txt, y, fsz, col, weight in ((now.format("%a"), 0.17, 0.15, (*design.RED, 1), "Semi-Bold"),
+        for txt, y, fsz, col, weight in ((weekday_short(now), 0.17, 0.15, (*design.RED, 1), "Semi-Bold"),
                                          (str(now.get_day_of_month()), 0.30, 0.42, (0.12, 0.12, 0.13, 1), "Light")):
             lay = PangoCairo.create_layout(cr)
             lay.set_font_description(Pango.FontDescription(f"{design.FONT} {weight} {int(size * fsz * 0.75)}"))

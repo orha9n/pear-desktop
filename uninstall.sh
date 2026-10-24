@@ -27,6 +27,7 @@ if [ -f "$VALS" ]; then
       # shellcheck disable=SC2254
       case "$cur" in $pat) ;; *) echo "   · $ch $p: sonradan değiştirilmiş ($cur) — korunuyor"; continue ;; esac
     fi
+    [ "$typ" = double ] && old="${old/,/.}"     # Türkçe yerel ayar "0,900000" yazar, xfconf yalnız "0.9" okur
     if [ "$old" = "__UNSET__" ]; then
       xfconf-query -c "$ch" -p "$p" -r 2>/dev/null
     else
@@ -48,6 +49,8 @@ if [ -f "$G4/.liquid" ]; then
   echo "   ✓ GTK4 teması kaldırıldı"
 fi
 
+LT="$HOME/.local/share/themes/Liquid"           # install.sh'nin bildirim teması (işaret dosyasıyla)
+[ -f "$LT/.liquid" ] && rm -rf "$LT" && echo "   ✓ bildirim teması kaldırıldı"
 PYTHONPATH="$ROOT" python3 -m liquid.desktopmenu remove && echo "   ✓ masaüstü menüsünden Widget'ları Düzenle… kaldırıldı"
 
 XP="$HOME/.xprofile"

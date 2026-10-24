@@ -257,7 +257,7 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
 
 ## Tema analizi (24 Eki 19:50) — canlı ekran, süreçler, loglar, ayarlar, kod
 
-### A1. 🟠 Uygulama eşleme: 6 uygulama yanlış .desktop'a bağlanıyor (Thunar = "ikinci Finder")
+### A1. ✅ DÜZELTİLDİ — Uygulama eşleme: 6 uygulama yanlış .desktop'a bağlanıyor (Thunar = "ikinci Finder")
 - **Kanıt:** Thunar penceresi açıkken dock'un sonunda ikinci bir Finder simgesi (noktalı) çıkıyor; ilk Finder'a
   nokta gitmiyor. `AppIndex.desktop_for(Thunar)` → `thunar-bulk-rename.desktop`.
 - **Neden:** [core/apps.py](liquid/core/apps.py) `AppIndex` anahtarları `setdefault` ile dolduruyor; çalıştırılabilir
@@ -267,26 +267,38 @@ Tarih: 23 Ekim 2026 · İncelenen: `~/Desktop/macbook` (tüm kod, install/uninst
   mintwelcome → kde4-mintwelcome, mintstick → mintstick-format, xfce4-appfinder → xfce4-run.
   Menü çubuğundaki uygulama adı ve Finder menüsü de bu pencerelerde yanlış.
 - **Öneri:** Dosya adından gelen anahtar (`thunar` ← `thunar.desktop`) ve StartupWMClass, Exec'ten gelen anahtarı ezsin.
+> Düzeltme: öncelik katmanları (dosya adı > StartupWMClass > Exec), aynı katmanda menüde görünen kazanır.
+> 8 eşleme değişti, hepsi doğru yöne (ayrıca `code` → gizli UrlHandler yerine VSCode.desktop). Thunar açıkken dock'ta tek Finder.
 
-### A2. 🟠 Bildirim Merkezi hep boş kalacak: xfce4-notifyd bildirimleri kaydetmiyor
+### A2. ✅ DÜZELTİLDİ — Bildirim Merkezi hep boş kalacak: xfce4-notifyd bildirimleri kaydetmiyor
 - `~/.cache/xfce4/notifyd/log.sqlite` 0 satır; `xfce4-notifyd` kanalında `/notification-log` ayarı yok
   (varsayılan: kayıt kapalı). Saate tıklayınca her zaman "Bildirim Yok" görünür.
 - **Öneri:** `/notification-log = true` (install.sh'de `xfset` ile, yedekli).
+> Düzeltme: install.sh 6. adım + şimdi uygulandı (values.tsv'de eski değer: yok). Gerçek bildirimle henüz denenmedi.
 
-### A3. 🟡 Bildirim balonları macOS'a benzemiyor
+### A3. ✅ DÜZELTİLDİ — Bildirim balonları macOS'a benzemiyor
 - xfce4-notifyd teması `Default` (koyu gri dikdörtgen). macOS 26: sağ üstte, yuvarlak köşeli cam kart,
   uygulama simgesi solda, başlık kalın. Liquid'in kart tasarımıyla tutarsız.
 - **Öneri:** `~/.local/share/themes/Liquid/xfce-notify-4.0/gtk.css` (açık/koyu) ve `/theme = Liquid`.
+> Düzeltme: [assets/notify/gtk.css](assets/notify/gtk.css) (renkler GTK temasından → Karanlık Mod'u izler, köşe 18,
+> metin 13 px), `/theme=Liquid`, `/initial-opacity=1.0` (0,9'du; yazılar da saydamdı). picom gölgesi/köşesi hariç.
+> uninstall: tema silinir; Türkçe yerel ayardaki "0,900000" geri yazılamıyordu → double değerlerde virgül noktaya çevriliyor.
 
-### A4. 🟡 Pencere köşeleri köşeli
+### A4. ✅ DÜZELTİLDİ — Pencere köşeleri köşeli
 - picom `corner-radius = 0`. MacTahoe xfwm4 teması yalnız üst köşeleri yuvarlıyor; alt köşeler ve kenarlıksız
   uygulamalar (Claude, VS Code, Electron) tamamen köşeli. macOS 26'da tüm pencerelerin 4 köşesi yuvarlak.
 - **Öneri:** picom'da normal pencerelere `corner-radius ≈ 12`; dock/menü/tooltip/tam ekran/büyütülmüş hariç.
+> Düzeltme: `corner-radius = 12` (Liquid, GTK CSD, bildirim, masaüstü, dock, tooltip, tam ekran hariç).
+> **Bu sırada bulunan asıl hata:** picom paketinin `/etc/xdg/autostart/picom.desktop`'u her girişte AYARSIZ bir picom
+> açıyordu; bekçi onu "çalışıyor" sayıp bizimkini hiç başlatmıyordu → yeniden başlatmadan beri gerçek cam bulanıklığı
+> ve gölge kuralları devre dışıydı. Artık `~/.config/autostart/picom.desktop` (Hidden=true, X-Liquid) ile gizleniyor,
+> bekçi yabancı picom'u bizimkiyle değiştiriyor; `liquid compositor xfwm` (ve uninstall) gizlemeyi geri alıyor.
 
-### A5. 🟡 Cumartesi kısaltması "Cts" (macOS: "Cmt")
+### A5. ✅ DÜZELTİLDİ — Cumartesi kısaltması "Cts" (macOS: "Cmt")
 - Menü çubuğu saati ve dock'taki Takvim ikonu glibc'nin `%a` kısaltmasını kullanıyor: "24 Eki Cts".
   macOS Türkçe: Paz Pzt Sal Çar Per Cum **Cmt**. Diğer günler aynı.
 - **Öneri:** Türkçede gün kısaltmasını kendi tablomuzdan ver ([bar.py:485](liquid/bar.py:485), [dock.py:297](liquid/dock.py:297)).
+> Düzeltme: `i18n.weekday_short()` (Pzt Sal Çar Per Cum Cmt Paz); ekranda "24 Eki Cmt" doğrulandı.
 
 ### A6. ⚪ Dock ayarları yalnız dosyadan
 - Otomatik gizleme, konum (sol/sağ/alt), boyut, büyütme macOS'ta Dock sağ tık menüsünde/Ayarlar'da;

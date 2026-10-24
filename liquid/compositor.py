@@ -59,6 +59,37 @@ def picom_pid():
     return None
 
 
+def _ours(pid):
+    """Bu picom bizim ayarımızla mı başladı? (picom paketi /etc/xdg/autostart ile kendi varsayılanını açıyor)"""
+    try:
+        with open(f"/proc/{pid}/cmdline", "rb") as f:
+            return CONF.encode() in f.read()
+    except OSError:
+        return False
+
+
+# picom paketinin /etc/xdg/autostart/picom.desktop'u her girişte ayarsız bir picom açıyordu; bekçi onu
+# "çalışıyor" sayıp bizimkini hiç başlatmıyordu (cam bulanıklığı ve gölge kuralları devre dışı). Kullanıcı
+# düzeyinde gizle; xfwm'e dönüşte (ve uninstall'da) yalnız bizim yazdığımız dosya silinir.
+AUTOSTART = os.path.expanduser("~/.config/autostart/picom.desktop")
+
+
+def hide_system_autostart():
+    if os.path.exists("/etc/xdg/autostart/picom.desktop") and not os.path.exists(AUTOSTART):
+        os.makedirs(os.path.dirname(AUTOSTART), exist_ok=True)
+        with open(AUTOSTART, "w") as f:
+            f.write("[Desktop Entry]\nType=Application\nName=picom\nHidden=true\nX-Liquid=true\n")
+
+
+def restore_system_autostart():
+    try:
+        with open(AUTOSTART) as f:
+            if "X-Liquid=true" in f.read():
+                os.remove(AUTOSTART)
+    except OSError:
+        pass
+
+
 def start_picom():
     log = open(os.path.expanduser("~/.cache/liquid/picom.log"), "a")
     try:
@@ -90,8 +121,13 @@ def use_picom():
     if st.get("mode") != "picom":
         st["xfwm_compositing"] = _xfwm()               # geri dönüşte yazılacak önceki değer
     _xfwm("false")
+    hide_system_autostart()
     time.sleep(0.6)                                   # xfwm4 _NET_WM_CM_S0'ı bıraksın
-    if not picom_pid():
+    pid = picom_pid()
+    if pid and not _ours(pid):
+        stop_picom()
+        pid = None
+    if not pid:
         start_picom()
     time.sleep(1.5)
     if not picom_pid():
@@ -106,6 +142,7 @@ def use_picom():
 def use_xfwm():
     st = load()
     _save({"mode": "xfwm"})                           # önce seçim: bekçi arada picom'u geri açmasın
+    restore_system_autostart()
     stop_picom()
     _xfwm(st.get("xfwm_compositing", "true"))
 
@@ -120,7 +157,14 @@ class Keeper:
     def tick(self, note):
         if load().get("mode") != "picom":
             return
-        if picom_pid():
+        pid = picom_pid()
+        if pid and not _ours(pid):
+            note(f"ayarsız picom (PID {pid}, sistem autostart'ı) — Liquid ayarıyla değiştiriliyor")
+            hide_system_autostart()
+            stop_picom()
+            start_picom()
+            return
+        if pid:
             self.had = True
             return
         now = time.monotonic()

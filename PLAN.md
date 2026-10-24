@@ -269,3 +269,15 @@ macbook/
   ilk gün satırı 0,381W, adım 0,118W · bugün dairesi r 0,055W · rakam büyük harfi ~0,048W, kalın.
   Saat: kadran r 0,44W · saat çizgisi 0,09R, dakika 0,05R · rakam merkezi 0,68R, kalın, büyük harf ~0,075W ·
   saniye 0,96R / kuyruk 0,16R · cam kenarı belirsiz (rim 0,35). Üçünde de gölge neredeyse yok; fotoğrafta kenar çizgisi yok.
+- 24.10 — Kullanıcı: "A1–A5 arasını düzelt" (problems.md "Tema analizi"). Plan:
+  A1 AppIndex: dosya adı + StartupWMClass anahtarları Exec anahtarını ezer (iki geçiş).
+  A2 xfce4-notifyd /notification-log=true, install.sh xfset ile (values.tsv yedekli); şimdi de uygula.
+  A3 Kendi bildirim teması ~/.local/share/themes/Liquid/xfce-notify-4.0/gtk.css (macOS 26 kartı); /theme=Liquid
+     (xfset yedekli); kaynak assets/notify/gtk.css, install kopyalar, uninstall siler.
+  A4 picom corner-radius 12; dock/menü/tooltip/tam ekran/büyütülmüş/Liquid pencereleri hariç.
+  A5 Türkçe gün kısaltması tablosu (Cmt) → bar saati + dock Takvim ikonu.
+## 5i. Yeni tuzaklar
+- picom paketi /etc/xdg/autostart/picom.desktop ile girişte ayarsız picom açıyor → "picom çalışıyor mu" yetmez,
+  komut satırında bizim --config'imiz var mı bak (compositor._ours).
+- Türkçe yerel ayarda xfconf-query double'ı "0,900000" yazar ama yalnız "0.9" okur.
+- AppIndex'te Exec anahtarı belirsiz (thunar ↔ thunar-bulk-rename); dosya adı/WMClass önce gelir.

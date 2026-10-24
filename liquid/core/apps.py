@@ -99,22 +99,27 @@ def all_apps():
 
 class AppIndex:
     def __init__(self):
-        self.idx = {}
+        # Öncelik: dosya adı > StartupWMClass > Exec. Exec tek başına belirsiz: "thunar" hem thunar.desktop
+        # hem thunar-bulk-rename.desktop (Exec=thunar --bulk-rename); ilk görülen kazanınca Thunar
+        # penceresi Toplu Yeniden Adlandır'a bağlanıyordu (dock'ta ikinci Finder).
+        tiers = ({}, {}, {})
         for ai in Gio.AppInfo.get_all():
             if not isinstance(ai, Gio.DesktopAppInfo):
                 continue
             did = ai.get_id() or ""
-            keys = {did[:-8].lower() if did.endswith(".desktop") else did.lower()}
             wm = ai.get_startup_wm_class()
-            if wm:
-                keys.add(_strip_ext(wm.lower()))
             ex = os.path.basename((ai.get_executable() or "").strip()).lower()
-            if ex and ex not in _SKIP_EXE and not _interp(ex):
-                keys.add(_strip_ext(ex))
-            for k in list(keys):
-                keys.add(k.split(".")[-1])
-            for k in keys:
-                self.idx.setdefault(k, did)
+            for tier, key in ((0, did[:-8].lower() if did.endswith(".desktop") else did.lower()),
+                              (1, _strip_ext(wm.lower()) if wm else ""),
+                              (2, _strip_ext(ex) if ex and ex not in _SKIP_EXE and not _interp(ex) else "")):
+                for k in {key, key.split(".")[-1]} - {""}:
+                    old = tiers[tier].get(k)
+                    # aynı katmanda çakışma: menüde görünen kazanır (VSCode.desktop, gizli UrlHandler değil)
+                    if old is None or (not old[1] and ai.should_show()):
+                        tiers[tier][k] = (did, ai.should_show())
+        self.idx = {}
+        for tier in reversed(tiers):
+            self.idx.update({k: v[0] for k, v in tier.items()})
 
     def desktop_for(self, w):
         pid = w.get_pid()

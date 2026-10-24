@@ -154,6 +154,14 @@ Terminal=false
 X-GNOME-Autostart-enabled=true
 EOF
 ok "~/.config/autostart/liquid.desktop"
+# bildirimler: macOS kartı (kendi temamız) + geçmiş kaydı (Bildirim Merkezi'nde görünsün)
+NT="$HOME/.local/share/themes/Liquid/xfce-notify-4.0"
+mkdir -p "$NT" && cp "$ROOT/assets/notify/gtk.css" "$NT/gtk.css" && touch "$NT/../.liquid"
+xfset xfce4-notifyd /theme string Liquid
+xfset xfce4-notifyd /initial-opacity double 1.0 "1*"
+xfset xfce4-notifyd /notification-log bool true
+pkill -HUP -x xfce4-notifyd 2>/dev/null || true
+ok "bildirimler: Liquid teması, geçmiş açık"
 # masaüstü sağ tık → "Widget'ları Düzenle…" (Thunar özel eylemi; yalnız bizim eylemimiz eklenir/silinir)
 [ -e "$HOME/.config/Thunar/uca.xml" ] && [ ! -e "$BK/uca.xml.orig" ] && cp -a "$HOME/.config/Thunar/uca.xml" "$BK/uca.xml.orig"
 PYTHONPATH="$ROOT" python3 -m liquid.desktopmenu install && ok "masaüstü menüsü: Widget'ları Düzenle…"

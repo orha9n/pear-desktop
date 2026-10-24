@@ -96,6 +96,15 @@ def fold(s):
     return (s or "").replace("İ", "i").replace("I", "i").replace("ı", "i").casefold().replace("i\u0307", "i")
 
 
+# macOS'un Türkçe gün kısaltmaları; glibc tr_TR'de cumartesi "Cts" (macOS: "Cmt")
+DAYS_SHORT_TR = ("Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz")
+
+
+def weekday_short(dt):
+    """GLib.DateTime → menü çubuğu/dock için kısa gün adı."""
+    return DAYS_SHORT_TR[dt.get_day_of_week() - 1] if LANG == "tr" else dt.format("%a")
+
+
 def t(key):
     e = S.get(key)
     if not e:

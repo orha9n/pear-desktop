@@ -1,0 +1,65 @@
+/* Liquid — xfce4-notifyd teması (macOS 26 bildirim kartı).
+   Renkler etkin GTK temasından gelir (MacTahoe-Light / -Dark) → Karanlık Mod'u kendiliğinden izler.
+   install.sh bunu ~/.local/share/themes/Liquid/xfce-notify-4.0/gtk.css'e kopyalar. */
+#XfceNotifyWindow {
+    background-color: alpha(@theme_bg_color, 0.90);
+    background-image: none;
+    border-radius: 18px;
+    border: 1px solid alpha(@theme_fg_color, 0.10);
+    box-shadow: none;
+    padding: 12px 14px;
+}
+
+#XfceNotifyWindow:hover {
+    background-color: alpha(@theme_bg_color, 0.96);
+}
+
+#XfceNotifyWindow label {
+    color: alpha(@theme_fg_color, 0.88);
+    font-family: "SF Pro Text", "Inter", sans-serif;
+    font-size: 13px;
+    text-shadow: none;
+}
+
+#XfceNotifyWindow label#summary {
+    color: @theme_fg_color;
+    font-weight: 700;
+}
+
+#XfceNotifyWindow image {
+    margin-right: 4px;
+}
+
+#XfceNotifyWindow button {
+    border: none;
+    border-radius: 8px;
+    box-shadow: none;
+    background-image: none;
+    background-color: alpha(@theme_fg_color, 0.08);
+    color: @theme_fg_color;
+    padding: 4px 10px;
+}
+
+#XfceNotifyWindow button:hover {
+    background-color: alpha(@theme_fg_color, 0.14);
+}
+
+#XfceNotifyWindow progressbar {
+    min-height: 6px;
+}
+
+#XfceNotifyWindow progressbar trough {
+    background-image: none;
+    background-color: alpha(@theme_fg_color, 0.12);
+    border: none;
+    border-radius: 3px;
+    min-height: 6px;
+}
+
+#XfceNotifyWindow progressbar progress {
+    background-image: none;
+    background-color: #0a84ff;
+    border: none;
+    border-radius: 3px;
+    min-height: 6px;
+}
