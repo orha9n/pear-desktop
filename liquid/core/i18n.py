@@ -72,6 +72,9 @@ S = {
     "widgets": ("Widgets", "Widget'lar"), "edit_widgets": ("Edit Widgets…", "Widget'ları Düzenle…"),
     "w_clock": ("Clock", "Saat"), "w_photo": ("Photo", "Fotoğraf"),
     "add": ("Add", "Ekle"), "remove": ("Remove", "Kaldır"), "done": ("Done", "Bitti"),
+    "on_desktop": ("On Desktop", "Masaüstünde"), "add_hint": ("Click a widget to add it to the desktop.",
+                                                            "Masaüstüne eklemek için bir widget'a tıklayın."),
+    "no_notifications": ("No Notifications", "Bildirim Yok"), "now": ("now", "şimdi"),
 }
 
 

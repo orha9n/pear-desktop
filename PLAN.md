@@ -251,3 +251,10 @@ macbook/
 - GDK 3.24'te `keyval_name(XF86AudioRaiseVolume)` = "AudioRaiseVolume" (önek yok); xfconf "XF86…" bekler.
 - Menü çubuğu dikey hiza: Inter yazısı ortalanınca büyük harfler 1 px yukarıda kalıyor → etiketlere padding-top 2px; ölçüm: yazı/elma/simge merkezi 14,5 px (30 px çubuk).
 - Tepsi simgesi sembolik değilse CSS rengi almaz → `tray.template()` tek renkli pixbuf.ı alfa korunarak çubuk rengine boyar; renkli simgeye dokunmaz.
+- 24.10 — Kullanıcı: "widget ekleme yerini takvime (saate) basınca görünecek şekilde koymuşsun, Apple'da böyle değil".
+  macOS 26 davranışı: saat/tarih tıklaması → **Bildirim Merkezi** (sağda cam panel, bildirimler; en altta
+  "Widget'ları Düzenle…"). Widget galerisi ekranın **altında ortada** geniş cam sayfa: canlı önizlemeler,
+  tıkla = masaüstüne ekle, sağ altta "Bitti". Düzenleme modunda masaüstü widget'larının sol üst köşesinde
+  "−" rozeti (tıkla = kaldır). Widget sağ tık → "Widget'ları Düzenle…" de galeriyi açar.
+  Bildirimler: xfce4-notifyd geçmişi ~/.cache/xfce4/notifyd/log.sqlite (yalnız OKU).
+  Yapılmayan: masaüstü (xfdesktop) sağ tık menüsüne öğe ekleme (xfdesktop'un menüsü).

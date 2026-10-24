@@ -118,6 +118,9 @@ class Widget(Gtk.Window):
         return False
 
     def _press(self, w, e):
+        if e.button == 1 and Gallery.editing() and math.hypot(e.x - self.pad - 6, e.y - self.pad - 6) <= BADGE_R + 2:
+            Gallery.instance._set(self.kind, False)
+            return True
         if e.button == 1:
             self.begin_move_drag(e.button, int(e.x_root), int(e.y_root), e.time)
         elif e.button == 3:
@@ -155,6 +158,15 @@ class Widget(Gtk.Window):
         cr.set_operator(cairo.OPERATOR_OVER)
         cr.translate(self.pad, self.pad)
         self.paint(cr)
+        if Gallery.editing():                   # macOS düzenleme modu: sol üstte "−" rozeti
+            design.circle(cr, 6, 6, BADGE_R)
+            cr.set_source_rgba(0.55, 0.55, 0.58, 0.96)
+            cr.fill()
+            cr.set_source_rgba(1, 1, 1, 1)
+            cr.set_line_width(2)
+            cr.move_to(1.5, 6)
+            cr.line_to(10.5, 6)
+            cr.stroke()
         return True
 
     def paint(self, cr):
@@ -332,69 +344,123 @@ class PhotoWidget(Widget):
 # ----------------------------- Widget galerisi -----------------------------
 KINDS = (("calendar", "app_calendar", "x-office-calendar"), ("clock", "w_clock", "preferences-system-time"),
          ("photo", "w_photo", "image-x-generic"))
+PREVIEW = 0.72                                    # galerideki canlı önizleme ölçeği
+BADGE_R = 10                                      # düzenleme modundaki "−" rozeti
+
+
+def _card(win, keep_above=True):
+    """Liquid cam kart penceresi (DIALOG, kenarsız, saydam köşeli)."""
+    from .applemenu import install_css, _card_bg
+    from . import compositor
+    win.set_name("lcard")
+    compositor.mark(win)
+    win.set_decorated(False)
+    win.set_resizable(False)
+    win.set_skip_taskbar_hint(True)
+    win.set_skip_pager_hint(True)
+    win.set_keep_above(keep_above)
+    win.set_type_hint(Gdk.WindowTypeHint.DIALOG)
+    win.set_app_paintable(True)
+    vis = win.get_screen().get_rgba_visual()
+    if vis:
+        win.set_visual(vis)
+    install_css("card", Gtk.STYLE_PROVIDER_PRIORITY_USER + 20)
+    win.connect("draw", _card_bg)
+
+
+def _present(win):
+    win.show_all()
+    win.set_keep_above(True)
+    win.present()
+    GLib.timeout_add(60, lambda: (win.get_window() and win.get_window().focus(Gdk.CURRENT_TIME), False)[1])
 
 
 class Gallery(Gtk.Window):
-    """Menü çubuğunda saate tıklayınca sağ üstte açılan "Widget'lar" kartı (macOS'ta saat Bildirim
-    Merkezi'ni, altındaki "Widget'ları Düzenle" galeriyi açar). Kaldırılan widget'lar buradan geri eklenir."""
+    """macOS "Widget'ları Düzenle": ekranın altında ortada geniş cam sayfa. Canlı önizlemeye tıkla =
+    masaüstüne ekle; açıkken masaüstündeki widget'ların köşesinde "−" rozeti (tıkla = kaldır)."""
     instance = None
-    W = 280
 
     def __init__(self, classes, live):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
-        from .applemenu import install_css, _card_bg
         Gallery.instance = self
         self.classes, self.live = classes, live           # kind -> sınıf, kind -> açık pencere
-        self.set_name("lcard")
+        self.previews = {}                                 # açık olmayan türler için gizli örnek (önizleme)
         self.set_title("Liquid Widgets")
-        from . import compositor
-        compositor.mark(self)
-        self.set_decorated(False)
-        self.set_resizable(False)
-        self.set_skip_taskbar_hint(True)
-        self.set_skip_pager_hint(True)
-        self.set_keep_above(True)
-        self.set_type_hint(Gdk.WindowTypeHint.DIALOG)
-        self.set_app_paintable(True)
-        vis = self.get_screen().get_rgba_visual()
-        if vis:
-            self.set_visual(vis)
-        install_css("card", Gtk.STYLE_PROVIDER_PRIORITY_USER + 20)
-        self.connect("draw", _card_bg)
-        self.connect("focus-out-event", lambda *_: (time.monotonic() - self._shown > 0.5 and self.hide(), False)[1])
-        self.connect("key-press-event", lambda w, e: (e.keyval == Gdk.KEY_Escape and self.hide(), False)[1])
-        self._shown = 0.0
-        self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        _card(self)
+        self.connect("key-press-event", lambda w, e: (e.keyval == Gdk.KEY_Escape and self.done(), False)[1])
+        self.connect("hide", lambda *_: self._editing(False))
+        self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         for m in ("top", "bottom", "start", "end"):
-            getattr(self.box, f"set_margin_{m}")(16)
+            getattr(self.box, f"set_margin_{m}")(22)
         self.add(self.box)
+        GLib.timeout_add(1000, lambda: (self.get_visible() and self.queue_draw(), True)[1])   # saat önizlemesi
+
+    @staticmethod
+    def editing():
+        g = Gallery.instance
+        return g is not None and g.get_visible()
+
+    def _editing(self, on):
+        for w in self.live.values():
+            w.queue_draw()
+
+    def _sample(self, kind):
+        w = self.live.get(kind)
+        if w is None:
+            w = self.previews.get(kind) or self.previews.setdefault(kind, self.classes[kind]())
+        return w
+
+    def _preview(self, kind):
+        w = self._sample(kind)
+        da = Gtk.DrawingArea()
+        da.set_size_request(int(w.W * PREVIEW), int(w.H * PREVIEW))
+
+        def draw(_da, cr):
+            cr.scale(PREVIEW, PREVIEW)
+            self._sample(kind).paint(cr)
+        da.connect("draw", draw)
+        return da
 
     def _rebuild(self):
-        from .applemenu import _icon
         for ch in self.box.get_children():
             self.box.remove(ch)
         title = Gtk.Label(label=t("widgets"), xalign=0)
-        title.get_style_context().add_class("title")
+        title.get_style_context().add_class("big")
         self.box.pack_start(title, False, False, 0)
+        hint = Gtk.Label(label=t("add_hint"), xalign=0)
+        hint.get_style_context().add_class("sub")
+        self.box.pack_start(hint, False, False, 0)
+        row = Gtk.Box(spacing=28)
+        row.set_margin_top(14)
         cp = conf()
-        for kind, label, icon in KINDS:
+        for kind, label, _icon in KINDS:
             on = cp.get(kind, "hidden", fallback="0") != "1"
-            row = Gtk.Box(spacing=10)
-            row.pack_start(_icon(icon, 28), False, False, 0)
-            lb = Gtk.Label(label=t(label), xalign=0)
+            col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+            ev = Gtk.EventBox()
+            ev.set_valign(Gtk.Align.END)
+            ev.add(self._preview(kind))
+            ev.set_opacity(0.45 if on else 1.0)
+            if not on:
+                ev.connect("button-release-event", lambda *_a, k=kind: (self._set(k, True), True)[1])
+                ev.connect("realize", lambda e: e.get_window().set_cursor(
+                    Gdk.Cursor.new_from_name(e.get_display(), "pointer")))
+            col.pack_start(ev, True, True, 0)
+            lb = Gtk.Label(label=t(label))
             lb.get_style_context().add_class("val")
-            row.pack_start(lb, True, True, 0)
-            b = Gtk.Button(label=t("remove") if on else t("add"))
-            b.get_style_context().add_class("secondary" if on else "primary")
-            b.set_size_request(84, -1)
-            b.connect("clicked", lambda _b, k=kind, o=on: self._set(k, not o))
-            row.pack_end(b, False, False, 0)
-            self.box.pack_start(row, False, False, 0)
+            col.pack_start(lb, False, False, 0)
+            sub = Gtk.Label(label=t("on_desktop") if on else "")
+            sub.get_style_context().add_class("detail")
+            col.pack_start(sub, False, False, 0)
+            row.pack_start(col, False, False, 0)
+        self.box.pack_start(row, False, False, 0)
+        foot = Gtk.Box()
         done = Gtk.Button(label=t("done"))
-        done.get_style_context().add_class("secondary")
-        done.set_margin_top(4)
-        done.connect("clicked", lambda *_: self.hide())
-        self.box.pack_start(done, False, False, 0)
+        done.get_style_context().add_class("primary")
+        done.set_size_request(96, -1)
+        done.connect("clicked", lambda *_: self.done())
+        foot.pack_end(done, False, False, 0)
+        foot.set_margin_top(8)
+        self.box.pack_start(foot, False, False, 0)
         self.box.show_all()
 
     def _set(self, kind, on):
@@ -402,28 +468,139 @@ class Gallery(Gtk.Window):
         w = self.live.get(kind)
         if on:
             if w is None:
-                w = self.live[kind] = self.classes[kind]()
+                w = self.live[kind] = self.previews.pop(kind, None) or self.classes[kind]()
             w.show_all()
         elif w is not None:
             w.hide()
+        if self.get_visible():
+            self._rebuild()
+            self._place()
+        self._editing(True)
+
+    def _place(self):
+        mx, my, mw, mh = screen_geometry()
+        w, h = self.get_preferred_size()[1].width, self.get_preferred_size()[1].height
+        dock = design.DOCK_ICON + 2 * design.DOCK_PAD + design.DOCK_BOTTOM
+        self.move(mx + (mw - w) // 2, my + mh - h - dock - 16)
+
+    def show_gallery(self):
         self._rebuild()
+        self._place()
+        _present(self)
+        self._editing(True)
+
+    def done(self):
+        self.hide()
+
+
+# ----------------------------- Bildirim Merkezi -----------------------------
+NOTIFY_DB = os.path.expanduser("~/.cache/xfce4/notifyd/log.sqlite")
+
+
+def notifications(limit=12):
+    """xfce4-notifyd geçmişi (salt okunur): (zaman, uygulama, simge, başlık, metin), yeniden eskiye."""
+    import sqlite3
+    try:
+        db = sqlite3.connect(f"file:{NOTIFY_DB}?mode=ro", uri=True, timeout=0.5)
+        rows = db.execute("SELECT timestamp, app_name, icon_id, summary, body FROM notifications "
+                          "ORDER BY timestamp DESC LIMIT ?", (limit,)).fetchall()
+        db.close()
+        return rows
+    except Exception:
+        return []
+
+
+def ago(ts):
+    sec = ts / 1e6 if ts > 1e14 else ts / 1e3 if ts > 1e11 else ts     # notifyd: µs
+    d = max(0, time.time() - sec)
+    if d < 60:
+        return t("now")
+    if d < 3600:
+        return f"{int(d // 60)} dk" if LANG == "tr" else f"{int(d // 60)}m"
+    if d < 86400:
+        return f"{int(d // 3600)} sa" if LANG == "tr" else f"{int(d // 3600)}h"
+    return time.strftime("%d.%m", time.localtime(sec))
+
+
+class NotificationCenter(Gtk.Window):
+    """macOS: menü çubuğunda saate tıklayınca sağda açılan Bildirim Merkezi; en altta "Widget'ları Düzenle…"."""
+    W = 356
+
+    def __init__(self, gallery):
+        super().__init__(type=Gtk.WindowType.TOPLEVEL)
+        self.gallery = gallery
+        self.set_title("Liquid Notification Center")
+        _card(self)
+        self.connect("focus-out-event", lambda *_: (time.monotonic() - self._shown > 0.5 and self.hide(), False)[1])
+        self.connect("key-press-event", lambda w, e: (e.keyval == Gdk.KEY_Escape and self.hide(), False)[1])
+        self._shown = 0.0
+        self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        for m in ("top", "bottom", "start", "end"):
+            getattr(self.box, f"set_margin_{m}")(12)
+        self.add(self.box)
+
+    def _rebuild(self):
+        from .applemenu import _icon
+        for ch in self.box.get_children():
+            self.box.remove(ch)
+        rows = notifications()
+        if not rows:
+            e = Gtk.Label(label=t("no_notifications"))
+            e.get_style_context().add_class("empty")
+            e.set_margin_top(18)
+            e.set_margin_bottom(18)
+            self.box.pack_start(e, False, False, 0)
+        for ts, app, icon, summary, body in rows:
+            card = Gtk.Box(spacing=10)
+            card.get_style_context().add_class("notif")
+            img = _icon(icon or "dialog-information", 32) if icon and not os.path.isabs(icon) else \
+                _icon("dialog-information", 32)
+            img.set_valign(Gtk.Align.START)
+            img.set_margin_start(12)
+            img.set_margin_top(10)
+            card.pack_start(img, False, False, 0)
+            col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+            col.set_margin_top(9)
+            col.set_margin_bottom(10)
+            col.set_margin_end(12)
+            head = Gtk.Box()
+            a = Gtk.Label(label=(app or "").upper(), xalign=0)
+            a.get_style_context().add_class("app")
+            head.pack_start(a, True, True, 0)
+            tm = Gtk.Label(label=ago(ts))
+            tm.get_style_context().add_class("app")
+            head.pack_end(tm, False, False, 0)
+            col.pack_start(head, False, False, 0)
+            for txt, cls in ((summary, "val"), (body, "sub")):
+                if txt:
+                    lb = Gtk.Label(label=txt, xalign=0)
+                    lb.set_line_wrap(True)
+                    lb.set_max_width_chars(34)
+                    lb.set_lines(3)
+                    lb.set_ellipsize(Pango.EllipsizeMode.END)
+                    lb.get_style_context().add_class(cls)
+                    col.pack_start(lb, False, False, 0)
+            card.pack_start(col, True, True, 0)
+            self.box.pack_start(card, False, False, 0)
+        ed = Gtk.Button(label=t("edit_widgets"))
+        ed.get_style_context().add_class("secondary")
+        ed.set_halign(Gtk.Align.CENTER)
+        ed.set_size_request(180, -1)
+        ed.set_margin_top(4)
+        ed.connect("clicked", lambda *_: (self.hide(), self.gallery.show_gallery()))
+        self.box.pack_start(ed, False, False, 0)
+        self.box.show_all()
 
     def toggle(self):
         if self.get_visible():
             self.hide()
-        else:
-            self.show_gallery()
-
-    def show_gallery(self):
+            return
         self._rebuild()
         mx, my, mw, _ = screen_geometry()
         self.set_size_request(self.W, -1)
         self.move(mx + mw - self.W - 10, my + design.BAR_H + 6)
         self._shown = time.monotonic()
-        self.show_all()
-        self.set_keep_above(True)
-        self.present()
-        GLib.timeout_add(60, lambda: (self.get_window() and self.get_window().focus(Gdk.CURRENT_TIME), False)[1])
+        _present(self)
 
 
 def main():
@@ -440,10 +617,11 @@ def main():
             live[kind] = cls()
             live[kind].show_all()
     # Görünür widget olmasa da süreç AYAKTA kalır (çıkarsa bekçi 5 sn'de bir yeniden başlatıyordu).
-    # SIGUSR1 = menü çubuğunda saate tıklama → Widget'lar galerisi (kaldırılanlar buradan geri eklenir).
+    # SIGUSR1 = menü çubuğunda saate tıklama → Bildirim Merkezi (altında "Widget'ları Düzenle…").
     gallery = Gallery(classes, live)
+    center = NotificationCenter(gallery)
     design.on_theme_change(lambda: [w.queue_draw() for w in live.values()])
-    daemon.on_signal(signal.SIGUSR1, gallery.toggle)
+    daemon.on_signal(signal.SIGUSR1, center.toggle)
     if "--show" in sys.argv:
         GLib.timeout_add(150, lambda: (gallery.show_gallery(), False)[1])
     Gtk.main()

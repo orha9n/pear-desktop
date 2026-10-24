@@ -64,6 +64,9 @@ def card_css():
 #lcard button.primary label {{ color: white; font-weight: 600; }}
 #lcard button.secondary {{ background-color: {btn}; }}
 #lcard button.secondary:hover {{ background-color: {btn_h}; }}
+#lcard .notif {{ background-color: {btn}; border-radius: 16px; }}
+#lcard .app {{ font-size: 11px; font-weight: 600; color: {dim}; }}
+#lcard .empty {{ font-size: 13px; color: {dim}; }}
 """
 
 
