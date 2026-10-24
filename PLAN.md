@@ -247,4 +247,5 @@ macbook/
   (kısayollar değiştirilmedi). Başka uygulamaların menüleri (tepsi, Electron) açıkken hâlâ çalışmaz.
 ## 5h. Yeni tuzaklar
 - Alt menüye sızmasın: bar CSS'inde torun (` label`) değil çocuk (`> label`) seçici kullan; text-shadow kalıtsal.
+  dbusmenu/fallback öğeleri `menuitem > box > label` (bar.item) → o yolu da ekle (24.10 19:16 büyük yazı hatası).
 - GDK 3.24'te `keyval_name(XF86AudioRaiseVolume)` = "AudioRaiseVolume" (önek yok); xfconf "XF86…" bekler.

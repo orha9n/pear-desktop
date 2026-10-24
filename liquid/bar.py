@@ -267,7 +267,7 @@ class Bar(Gtk.Window):
 #lbar menubar {{ background: none; border: none; box-shadow: none; padding: 0; min-height: 0; }}
 #lbar menubar > menuitem {{ padding: 0 9px; margin: 3px 0; min-height: {H - 6}px; border-radius: 6px;
     background: none; box-shadow: none; border: none; color: {fg}; }}
-#lbar menubar > menuitem > label {{ font-size: {design.BAR_FONT_PX}px; font-weight: 500; color: {fg};
+#lbar menubar > menuitem > label, #lbar menubar > menuitem > box > label {{ font-size: {design.BAR_FONT_PX}px; font-weight: 500; color: {fg};
     text-shadow: {shadow}; }}
 #lbar menubar > menuitem.appname > label {{ font-weight: 700; }}
 #lbar menubar > menuitem.apple {{ padding: 0 12px 0 10px; }}
