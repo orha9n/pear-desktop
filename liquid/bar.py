@@ -287,6 +287,8 @@ class Bar(Gtk.Window):
         if hasattr(self, "apple_glyph"):
             self.apple_glyph.light = self.light_text
             self.apple_glyph.queue_draw()
+        if hasattr(self, "tray"):
+            self.tray.set_light(self.light_text)
 
     # ---------- tam ekran ----------
     def _fs_changed(self, mode):
@@ -409,6 +411,7 @@ class Bar(Gtk.Window):
         self.glyphs = []
         # uygulamaların tepsi ikonları (macOS: üçüncü taraf menü çubuğu öğeleri sistem simgelerinin solunda)
         self.tray = Tray()
+        self.tray.light = self.light_text
         self.tray.set_valign(Gtk.Align.CENTER)
         self.right.pack_start(self.tray, False, False, 0)
         if battery_state()[0] is not None:

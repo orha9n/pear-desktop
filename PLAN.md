@@ -250,3 +250,4 @@ macbook/
   dbusmenu/fallback öğeleri `menuitem > box > label` (bar.item) → o yolu da ekle (24.10 19:16 büyük yazı hatası).
 - GDK 3.24'te `keyval_name(XF86AudioRaiseVolume)` = "AudioRaiseVolume" (önek yok); xfconf "XF86…" bekler.
 - Menü çubuğu dikey hiza: Inter yazısı ortalanınca büyük harfler 1 px yukarıda kalıyor → etiketlere padding-top 2px; ölçüm: yazı/elma/simge merkezi 14,5 px (30 px çubuk).
+- Tepsi simgesi sembolik değilse CSS rengi almaz → `tray.template()` tek renkli pixbuf.ı alfa korunarak çubuk rengine boyar; renkli simgeye dokunmaz.

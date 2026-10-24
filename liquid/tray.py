@@ -16,7 +16,8 @@ import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 gi.require_version("XApp", "1.0")
-from gi.repository import Gtk, Gdk, Gio, GLib, GObject, XApp  # noqa: E402
+gi.require_version("GdkPixbuf", "2.0")
+from gi.repository import Gtk, Gdk, GdkPixbuf, Gio, GLib, GObject, XApp  # noqa: E402
 
 ICON = 16                                   # macOS menü çubuğu simgesi
 SN_WATCHER_DESKTOP = "/etc/xdg/autostart/xapp-sn-watcher.desktop"
@@ -45,10 +46,31 @@ def start_sn_watcher():
         pass
 
 
+def template(pb, light):
+    """macOS menü çubuğu simgeleri "template": yalnız şekil (alfa), renk çubuktan gelir.
+    Tek renkli (gri/siyah/beyaz) simgeyi çubuk rengine boya; gerçekten renkli simgeye dokunma."""
+    if pb is None or not pb.get_has_alpha() or pb.get_n_channels() != 4:
+        return pb
+    w, h, rs = pb.get_width(), pb.get_height(), pb.get_rowstride()
+    px = pb.get_pixels()
+    out = bytearray(rs * h)
+    v = 255 if light else 0
+    for y in range(h):
+        for x in range(w):
+            i = y * rs + x * 4
+            r, g, b, a = px[i:i + 4]
+            if a > 40 and max(r, g, b) - min(r, g, b) > 40:
+                return pb
+            out[i:i + 4] = (v, v, v, a)
+    return GdkPixbuf.Pixbuf.new_from_bytes(GLib.Bytes.new(bytes(out)), GdkPixbuf.Colorspace.RGB,
+                                           True, 8, w, h, rs)
+
+
 class TrayIcon(Gtk.EventBox):
-    def __init__(self, proxy):
+    def __init__(self, proxy, light=True):
         super().__init__()
         self.proxy = proxy
+        self.light = light
         self.get_style_context().add_class("tray")
         self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK |
                         Gdk.EventMask.SCROLL_MASK)
@@ -72,11 +94,26 @@ class TrayIcon(Gtk.EventBox):
     def _icon(self):
         s = self.proxy.props.icon_name or ""
         self.image.set_pixel_size(ICON)
+        sc = self.get_scale_factor()
         try:
-            gic = Gio.FileIcon.new(Gio.File.new_for_path(s)) if os.path.exists(s) else Gio.ThemedIcon.new(s)
-            self.image.set_from_gicon(gic, Gtk.IconSize.MENU)
+            if os.path.exists(s):
+                pb = GdkPixbuf.Pixbuf.new_from_file_at_size(s, ICON * sc, ICON * sc)
+            else:
+                info = Gtk.IconTheme.get_default().lookup_icon_for_scale(s, ICON, sc, Gtk.IconLookupFlags.FORCE_SIZE)
+                if info is None or info.is_symbolic():
+                    # sembolik simgeleri GTK zaten CSS rengiyle (#lbar .tray > image) boyar
+                    self.image.set_from_icon_name(s or "image-missing", Gtk.IconSize.MENU)
+                    return
+                pb = info.load_icon()
+            surf = Gdk.cairo_surface_create_from_pixbuf(template(pb, self.light), sc, None)
+            self.image.set_from_surface(surf)
         except Exception:
             self.image.set_from_icon_name("image-missing", Gtk.IconSize.MENU)
+
+    def set_light(self, light):
+        if light != self.light:
+            self.light = light
+            self._icon()
 
     def _origin(self):
         """Menü bu ikonun altında açılsın (çubuk ekranın üstünde → TOP)."""
@@ -106,6 +143,7 @@ class Tray(Gtk.Box):
     def __init__(self):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.icons = {}
+        self.light = True
         self.monitor = XApp.StatusIconMonitor()
         self.monitor.connect("icon-added", self._added)
         self.monitor.connect("icon-removed", self._removed)
@@ -119,11 +157,16 @@ class Tray(Gtk.Box):
         key = self._key(proxy)
         if key in self.icons or (proxy.props.name or "").replace("org.x.StatusIcon.", "") in SKIP:
             return
-        ic = self.icons[key] = TrayIcon(proxy)
+        ic = self.icons[key] = TrayIcon(proxy, self.light)
         self.pack_start(ic, False, False, 0)
         ic.show_all()
         ic.set_visible(proxy.props.visible)
         self._sort()
+
+    def set_light(self, light):
+        self.light = light
+        for ic in self.icons.values():
+            ic.set_light(light)
 
     def _removed(self, mon, proxy):
         ic = self.icons.pop(self._key(proxy), None)
