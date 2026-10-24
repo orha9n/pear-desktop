@@ -263,3 +263,9 @@ macbook/
   (uca.xml, unique-id liquid-edit-widgets, desen = masaüstü klasörünün adı, yalnız klasör) → `liquid widgets edit`
   → widgets'a SIGUSR2 → galeri. `liquid/desktopmenu.py install|remove`; ilk yedek backup/uca.xml.orig;
   install.sh 6. adım / uninstall.sh. xfdesktop uca.xml'i yalnız açılışta okur → bir kez yeniden başlatıldı.
+- 24.10 — Kullanıcı: "widget tasarımları çakma Apple gibi duruyor". Hedef PNG'den oranlar (W = widget genişliği):
+  (İlk ölçüm kaymış kırpmadan → yanlıştı; doğrusu hedefle aynı boyutta yan yana karşılaştırmadan:)
+  Takvim: ay başlığı merkezi 0,145W, sol 0,110W · ilk sütun merkezi 0,137W, adım 0,121W · başlık satırı 0,259W,
+  ilk gün satırı 0,381W, adım 0,118W · bugün dairesi r 0,055W · rakam büyük harfi ~0,048W, kalın.
+  Saat: kadran r 0,44W · saat çizgisi 0,09R, dakika 0,05R · rakam merkezi 0,68R, kalın, büyük harf ~0,075W ·
+  saniye 0,96R / kuyruk 0,16R · cam kenarı belirsiz (rim 0,35). Üçünde de gölge neredeyse yok; fotoğrafta kenar çizgisi yok.

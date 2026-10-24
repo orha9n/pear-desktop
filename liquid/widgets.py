@@ -54,7 +54,8 @@ def save(section, **kv):
         cp.write(f)
 
 
-def text(cr, s, x, y, size, weight="Bold", color=(0, 0, 0, 1), align="left", font=None):
+def text(cr, s, x, y, size, weight="Bold", color=(0, 0, 0, 1), align="left", font=None, middle=False):
+    """middle=True: y büyük harflerin (rakamların) görsel ortası — satır kutusunun değil."""
     lay = PangoCairo.create_layout(cr)
     lay.set_font_description(Pango.FontDescription(f"{font or design.FONT} {weight} {size}"))
     lay.set_text(s, -1)
@@ -63,6 +64,9 @@ def text(cr, s, x, y, size, weight="Bold", color=(0, 0, 0, 1), align="left", fon
         x -= w / 2
     elif align == "right":
         x -= w
+    if middle:
+        ink, _log = lay.get_pixel_extents()
+        y -= ink.y + ink.height / 2 if s.strip() else h / 2
     cr.move_to(x, y)
     cr.set_source_rgba(*color)
     PangoCairo.show_layout(cr, lay)
@@ -182,34 +186,36 @@ class CalendarWidget(Widget):
         GLib.timeout_add_seconds(60, lambda: (self.queue_draw(), True)[1])
 
     def paint(self, cr):
-        design.soft_shadow(cr, 0, 0, self.W, self.H, R, strength=0.16, spread=10, dy=3)
-        design.rrect(cr, 0, 0, self.W, self.H, R)
-        cr.set_source_rgba(*design.paper(0.98))
+        W = self.W                                  # oranlar hedef görselden (PLAN.md, 24.10)
+        design.soft_shadow(cr, 0, 0, W, self.H, R, strength=0.06, spread=8, dy=2)
+        design.rrect(cr, 0, 0, W, self.H, R)
+        cr.set_source_rgba(*design.paper(1))
         cr.fill()
         now = GLib.DateTime.new_now_local()
         y, mo, today = now.get_year(), now.get_month(), now.get_day_of_month()
         month = MONTHS_TR[mo - 1] if LANG == "tr" else now.format("%B").upper()
-        text(cr, month, 17, 15, 8.5, "Heavy", (*design.RED, 1))
+        x0, cw = W * 0.0765, W * 0.121
+        text(cr, month, W * 0.110, W * 0.145, 7.6, "Bold", (*design.RED, 1), middle=True)
         days = DAYS_TR if LANG == "tr" else DAYS_EN
-        x0, cw, top, rh = 15, (self.W - 30) / 7, 36, 19.5
         for i, d in enumerate(days):
-            col = design.ink(0.88 if i < 5 else 0.42)
-            text(cr, d, x0 + cw * i + cw / 2, top, 7.5, "Bold", col, "center")
+            col = design.ink(0.86 if i < 5 else 0.40)
+            text(cr, d, x0 + cw * i + cw / 2, W * 0.259, 7.6, "Bold", col, "center", middle=True)
         cal = calendar.Calendar(firstweekday=0).monthdayscalendar(y, mo)
+        first = W * 0.381
+        step = min(W * 0.118, (W * 0.88 - first) / max(1, len(cal) - 1))   # 6 haftalık ayda sıkışır
         for r, week in enumerate(cal):
             for c, d in enumerate(week):
                 if not d:
                     continue
-                cx = x0 + cw * c + cw / 2
-                cy = top + 18 + r * rh
+                cx, cy = x0 + cw * c + cw / 2, first + r * step
                 if d == today:
-                    design.circle(cr, cx, cy + 6.5, 9)
+                    design.circle(cr, cx, cy, W * 0.056)
                     cr.set_source_rgba(*design.RED, 1)
                     cr.fill()
                     col = (1, 1, 1, 1)
                 else:
-                    col = design.ink(0.88 if c < 5 else 0.42)
-                text(cr, str(d), cx, cy, 7.5, "Bold", col, "center")
+                    col = design.ink(0.86 if c < 5 else 0.40)
+                text(cr, str(d), cx, cy, 8.8, "Bold", col, "center", middle=True)
 
 
 # ----------------------------- Analog saat -----------------------------
@@ -224,29 +230,25 @@ class ClockWidget(Widget):
         bd = self.glass_backdrop()
         # cam kart: bulanık duvar kâğıdı + sıcak beyaz ton (hedefteki pembemsi cam)
         design.liquid_glass(cr, 0, 0, self.W, self.H, R, backdrop=bd, backdrop_xy=(-self.pad, -self.pad),
-                            tint=design.glass_tint(0.30), dark=design.dark())
-        cx, cy, rr = self.W / 2, self.H / 2, self.W / 2 - 13
+                            tint=design.glass_tint(0.30), dark=design.dark(), shadow=0.35, rim=0.35)
+        cx, cy, rr = self.W / 2, self.H / 2, self.W * 0.44
         design.circle(cr, cx, cy, rr)
         cr.set_source_rgba(*design.paper(1))
         cr.fill()
-        for i in range(60):                               # dakika çizgileri
+        cr.set_line_cap(cairo.LINE_CAP_BUTT)
+        for i in range(60):                               # saat çizgileri kalın siyah, dakikalar ince
             a = i * math.pi / 30
-            r1 = rr - (5 if i % 5 == 0 else 3.2)
-            cr.move_to(cx + math.sin(a) * r1, cy - math.cos(a) * r1)
-            cr.line_to(cx + math.sin(a) * (rr - 1.8), cy - math.cos(a) * (rr - 1.8))
-            cr.set_source_rgba(*design.ink(0.55 if i % 5 == 0 else 0.22))
-            cr.set_line_width(1.2 if i % 5 == 0 else 0.8)
+            hour = i % 5 == 0
+            r0, r1 = rr * (0.975 - (0.09 if hour else 0.05)), rr * 0.975
+            cr.move_to(cx + math.sin(a) * r0, cy - math.cos(a) * r0)
+            cr.line_to(cx + math.sin(a) * r1, cy - math.cos(a) * r1)
+            cr.set_source_rgba(*design.ink(0.90 if hour else 0.45))
+            cr.set_line_width(1.7 if hour else 0.7)
             cr.stroke()
         for h in range(1, 13):                            # rakamlar
             a = h * math.pi / 6
-            nx, ny = cx + math.sin(a) * (rr - 17), cy - math.cos(a) * (rr - 17)
-            lay = PangoCairo.create_layout(cr)
-            lay.set_font_description(Pango.FontDescription(f"{design.FONT} Semi-Bold 13"))
-            lay.set_text(str(h), -1)
-            tw, th = lay.get_pixel_size()
-            cr.move_to(nx - tw / 2, ny - th / 2)
-            cr.set_source_rgba(*design.ink(0.92))
-            PangoCairo.show_layout(cr, lay)
+            nx, ny = cx + math.sin(a) * rr * 0.68, cy - math.cos(a) * rr * 0.68
+            text(cr, str(h), nx, ny, 13, "Bold", design.ink(0.92), "center", middle=True)
         now = GLib.DateTime.new_now_local()
         hh, mm, ss = now.get_hour() % 12, now.get_minute(), now.get_second()
         cr.set_line_cap(cairo.LINE_CAP_ROUND)
@@ -269,7 +271,7 @@ class ClockWidget(Widget):
             cr.set_source_rgba(*design.ink(0.95))
             cr.fill()
             cr.restore()
-        hand(sa, rr * 0.86, 1.1, (*design.ORANGE, 1), back=rr * 0.18)
+        hand(sa, rr * 0.96, 1.1, (*design.ORANGE, 1), back=rr * 0.16)
         design.circle(cr, cx, cy, 3.2)
         cr.set_source_rgba(*design.ORANGE, 1)
         cr.fill()
@@ -304,7 +306,7 @@ class PhotoWidget(Widget):
         self.queue_draw()
 
     def paint(self, cr):
-        design.soft_shadow(cr, 0, 0, self.W, self.H, R, strength=0.18, spread=10, dy=3)
+        design.soft_shadow(cr, 0, 0, self.W, self.H, R, strength=0.06, spread=8, dy=2)
         cr.save()
         design.rrect(cr, 0, 0, self.W, self.H, R)
         cr.clip()
@@ -314,10 +316,6 @@ class PhotoWidget(Widget):
             cr.set_source_rgba(0.85, 0.85, 0.88, 1)
         cr.paint()
         cr.restore()
-        design.rrect(cr, 0.5, 0.5, self.W - 1, self.H - 1, R)        # ince iç kenar ışığı
-        cr.set_source_rgba(1, 1, 1, 0.25)
-        cr.set_line_width(1)
-        cr.stroke()
 
     def context_menu(self):
         m = super().context_menu()

@@ -106,7 +106,7 @@ def soft_shadow(cr, x, y, w, h, r, strength=0.22, spread=10, dy=4):
 
 
 def liquid_glass(cr, x, y, w, h, r, backdrop=None, backdrop_xy=(0, 0), dark=False,
-                 tint=None, shadow=True):
+                 tint=None, shadow=True, rim=1.0):
     """macOS 26 Liquid Glass yüzeyi.
 
     backdrop: arkadaki duvar kâğıdının BULANIK cairo yüzeyi (ekran koordinatı backdrop_xy'de
@@ -114,7 +114,8 @@ def liquid_glass(cr, x, y, w, h, r, backdrop=None, backdrop_xy=(0, 0), dark=Fals
     iç kenar ışığı (üstte parlak, altta sönük) → ince dış çizgi.
     """
     if shadow:
-        soft_shadow(cr, x, y, w, h, r, strength=0.18 if not dark else 0.35, spread=12, dy=3)
+        k = shadow if isinstance(shadow, float) else 1.0
+        soft_shadow(cr, x, y, w, h, r, strength=(0.18 if not dark else 0.35) * k, spread=12, dy=3)
     cr.save()
     rrect(cr, x, y, w, h, r)
     cr.clip()
@@ -136,9 +137,9 @@ def liquid_glass(cr, x, y, w, h, r, backdrop=None, backdrop_xy=(0, 0), dark=Fals
     cr.save()
     rrect(cr, x + 0.75, y + 0.75, w - 1.5, h - 1.5, r - 0.75)
     edge = cairo.LinearGradient(0, y, 0, y + h)
-    edge.add_color_stop_rgba(0.0, 1, 1, 1, 0.75 if not dark else 0.35)
-    edge.add_color_stop_rgba(0.5, 1, 1, 1, 0.18)
-    edge.add_color_stop_rgba(1.0, 1, 1, 1, 0.38 if not dark else 0.15)
+    edge.add_color_stop_rgba(0.0, 1, 1, 1, (0.75 if not dark else 0.35) * rim)
+    edge.add_color_stop_rgba(0.5, 1, 1, 1, 0.18 * rim)
+    edge.add_color_stop_rgba(1.0, 1, 1, 1, (0.38 if not dark else 0.15) * rim)
     cr.set_source(edge)
     cr.set_line_width(1.5)
     cr.stroke()
