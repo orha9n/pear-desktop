@@ -227,6 +227,7 @@ class Bar(Gtk.Window):
         self._reveal_id = None
         self._popup_open = False
         self._wifi = (True, "", 0, [])  # wifi.scan() önbelleği (_poll doldurur)
+        self._vpn = []                  # wifi.vpns() önbelleği: [(ad, uuid, etkin)]
         self.wnck.connect("active-window-changed", lambda *_: GLib.idle_add(self.on_active))
         self.wnck.connect("active-workspace-changed", lambda *_: self._update_text_color())
         # yeşil düğme → macOS tam ekranı (pencere çubuğun altında, çubuk düz renk); uygulamanın kendi
@@ -476,9 +477,22 @@ class Bar(Gtk.Window):
                 if nm != ssid:                              # bağlı ağa tıklamak bağlantıyı yeniden kurmasın
                     mi.connect("activate", lambda w, n=nm, s=sec: wifi.connect(n, s))
                 m.append(mi)
+        if self._vpn:                                       # macOS: VPN'ler ayrı bölümde, aç/kapat anahtarı
+            m.append(sep())
+            m.append(item("VPN", sensitive=False, bold=True))
+            for name, uuid, active in self._vpn:
+                mi = Gtk.CheckMenuItem(label=name)
+                mi.set_active(active)
+                mi.connect("toggled", lambda w, n=name, u=uuid: self._set_vpn(n, u, w.get_active()))
+                m.append(mi)
         m.append(sep())
         m.append(item(t("wifi_settings"), lambda: sh_bg(["nm-connection-editor"])))
         self._popup(m, btn)
+
+    def _set_vpn(self, name, uuid, on):
+        # menü bir sonraki açılışta doğru görünsün: önbelleği hemen güncelle, iş bitince yeniden oku
+        self._vpn = [(n, u, on if u == uuid else a) for n, u, a in self._vpn]
+        wifi.set_vpn(name, uuid, on, done=self._poll)
 
     def _tick_clock(self):
         now = GLib.DateTime.new_now_local()
@@ -493,9 +507,9 @@ class Bar(Gtk.Window):
             self.g_batt.queue_draw()
 
         def wifi_bg():
-            st = wifi.scan()
-            GLib.idle_add(lambda: (setattr(self, "_wifi", st), setattr(self.g_wifi, "state", st[:3]),
-                                   self.g_wifi.queue_draw(), False)[3])
+            st, vp = wifi.scan(), wifi.vpns()
+            GLib.idle_add(lambda: (setattr(self, "_wifi", st), setattr(self, "_vpn", vp),
+                                   setattr(self.g_wifi, "state", st[:3]), self.g_wifi.queue_draw(), False)[4])
         threading.Thread(target=wifi_bg, daemon=True).start()
         return True
 

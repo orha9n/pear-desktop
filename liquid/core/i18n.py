@@ -54,6 +54,8 @@ S = {
     "battery": ("Battery", "Pil"), "power_source": ("Power Source", "Güç Kaynağı"),
     "power_adapter": ("Power Adapter", "Güç Adaptörü"), "battery_settings": ("Battery Settings…", "Pil Ayarları…"),
     "wifi_settings": ("Wi-Fi Settings…", "Wi-Fi Ayarları…"),
+    "vpn_failed": ("Could not change VPN “{}”.", "“{}” VPN'i değiştirilemedi."),
+    "connected": ("Connected", "Bağlı"),
     "wifi_password": ("The Wi-Fi network “{}” requires a password.", "“{}” Wi-Fi ağı bir şifre gerektiriyor."),
     "wifi_failed": ("Couldn’t join “{}”.", "“{}” ağına katılınamadı."),
     "password": ("Password", "Şifre"), "join": ("Join", "Katıl"), "other_networks": ("Other Networks", "Diğer Ağlar"),

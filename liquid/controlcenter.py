@@ -27,6 +27,7 @@ gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, Gdk, GLib, Pango, PangoCairo  # noqa: E402
 
 from . import compositor  # noqa: E402
+from .wifi import vpns, set_vpn  # noqa: E402
 from .core import design, wallpaper, daemon, screen_geometry, restart_on_monitor_change  # noqa: E402
 from .core.i18n import t  # noqa: E402
 
@@ -194,9 +195,7 @@ class ControlCenter(Gtk.Window):
             self.set_visual(vis)
         self.mx, self.my, self.mw, self.mh = screen_geometry()
         self.shadow = 16
-        # yükseklik: bağlantı bloğu 154 + 2 kaydırıcı 64 + oynatıcı 70 + boşluklar
-        self.H = PAD * 2 + 154 + GAP + 64 + GAP + 64 + GAP + 72
-        self.set_size_request(W + 2 * self.shadow, self.H + 2 * self.shadow)
+        self._fit_rows(3)
         self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK |
                         Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.SCROLL_MASK)
         self.connect("draw", self.on_draw)
@@ -206,7 +205,7 @@ class ControlCenter(Gtk.Window):
         self.connect("scroll-event", self.on_scroll)
         self.connect("focus-out-event", self._focus_out)
         self.connect("key-press-event", lambda w, e: self.hide() if e.keyval == Gdk.KEY_Escape else None)
-        self.st = {"wifi": (True, ""), "bt": False, "dnd": False, "dark": False, "bri": 100, "vol": 50,
+        self.st = {"wifi": (True, ""), "bt": False, "dnd": False, "dark": False, "bri": 100, "vol": 50, "vpn": [],
                    "player": ("", "", "", "")}
         self.drag = None           # "bri" | "vol"
         self.apply = Applier()
@@ -214,6 +213,14 @@ class ControlCenter(Gtk.Window):
         self.backdrop = None
         self._shown_at = 0.0
         self._art = (None, None)
+
+    def _fit_rows(self, n):
+        """Bağlantı kartı n satır (Wi-Fi, Bluetooth, Karanlık Mod [+ VPN]); her satır 46 px."""
+        self.conn_h = 16 + n * 46                       # 3 satır → 154
+        # yükseklik: bağlantı bloğu + 2 kaydırıcı 64 + oynatıcı 72 + boşluklar
+        self.H = PAD * 2 + self.conn_h + GAP + 64 + GAP + 64 + GAP + 72
+        self.set_size_request(W + 2 * self.shadow, self.H + 2 * self.shadow)
+        self.resize(W + 2 * self.shadow, self.H + 2 * self.shadow)
 
     # ---------- konum / görünürlük ----------
     def _place(self):
@@ -250,8 +257,16 @@ class ControlCenter(Gtk.Window):
 
     def _refresh(self):
         st = {"wifi": wifi(), "bt": bluetooth(), "dnd": dnd(), "dark": dark(), "bri": brightness(),
-              "vol": volume(), "player": player()}
-        GLib.idle_add(lambda: (self.st.update(st), self.queue_draw(), False)[2])
+              "vol": volume(), "player": player(), "vpn": vpns()}
+        GLib.idle_add(self._apply_state, st)
+
+    def _apply_state(self, st):
+        self.st.update(st)
+        n = 4 if st["vpn"] else 3                       # VPN tanımlıysa macOS gibi bağlantı kartında satırı
+        if 16 + n * 46 != self.conn_h:
+            self._fit_rows(n)
+        self.queue_draw()
+        return False
 
     # ---------- çizim yardımcıları ----------
     def _sym(self, name, size, rgba):
@@ -319,12 +334,16 @@ class ControlCenter(Gtk.Window):
         bw = (W - 2 * PAD - GAP) * 0.53
         sw = W - 2 * PAD - GAP - bw
         # --- bağlantı kartı ---
-        self._tile(cr, x0, y, bw, 154)
-        rows = (("wifi", "network-wireless-symbolic", "Wi-Fi",
+        ch = self.conn_h
+        self._tile(cr, x0, y, bw, ch)
+        rows = [("wifi", "network-wireless-symbolic", "Wi-Fi",
                  st["wifi"][1] or (t("on") if st["wifi"][0] else t("off")), st["wifi"][0]),
                 ("bt", "bluetooth-active-symbolic", "Bluetooth", t("on") if st["bt"] else t("off"), st["bt"]),
                 ("dark", "weather-clear-night-symbolic", t("dark_mode"), t("on") if st["dark"] else t("off"),
-                 st["dark"]))
+                 st["dark"])]
+        if st["vpn"]:
+            act = [v[0] for v in st["vpn"] if v[2]]
+            rows.append(("vpn", "network-vpn-symbolic", "VPN", ", ".join(act) if act else t("off"), bool(act)))
         for i, (key, icon, title, sub, on) in enumerate(rows):
             ry = y + 14 + i * 46
             self._circle_btn(cr, x0 + 28, ry + 15, 15, on, icon)
@@ -345,19 +364,21 @@ class ControlCenter(Gtk.Window):
         for j, (key, icon, label) in enumerate((("mirror", "video-display-symbolic", t("display")),
                                                 ("shot", "camera-photo-symbolic", t("screenshot")))):
             qx = fx + j * (qw + GAP)
-            self._tile(cr, qx, y + 82, qw, 72)
-            self._icon(cr, icon, qx + qw / 2 - 10, y + 96, 20, design.icon_ink(0.85))
+            qh = ch - 82                                # bağlantı kartı uzarsa (VPN satırı) birlikte uzar
+            dy = (qh - 72) / 2
+            self._tile(cr, qx, y + 82, qw, qh)
+            self._icon(cr, icon, qx + qw / 2 - 10, y + 96 + dy, 20, design.icon_ink(0.85))
             lay = PangoCairo.create_layout(cr)
             lay.set_font_description(Pango.FontDescription(f"{design.FONT} Medium 7"))
             lay.set_width(int((qw - 6) * Pango.SCALE))
             lay.set_alignment(Pango.Alignment.CENTER)
             lay.set_wrap(Pango.WrapMode.WORD)
             lay.set_text(label, -1)
-            cr.move_to(qx + 3, y + 122)
+            cr.move_to(qx + 3, y + 122 + dy)
             cr.set_source_rgba(*design.ink(0.75))
             PangoCairo.show_layout(cr, lay)
-            self.regions.append((qx, y + 82, qw, 72, key))
-        y += 154 + GAP
+            self.regions.append((qx, y + 82, qw, qh, key))
+        y += ch + GAP
         # --- kaydırıcılar ---
         for key, title, icon, val in (("bri", t("display"), "display-brightness-symbolic", st["bri"]),
                                       ("vol", t("sound"), "audio-volume-high-symbolic", st["vol"])):
@@ -468,6 +489,15 @@ class ControlCenter(Gtk.Window):
         elif key == "dark":
             st["dark"] = not st["dark"]
             set_dark(st["dark"])
+        elif key == "vpn" and st["vpn"]:
+            # açık olan(lar)ı kapat; hiçbiri açık değilse ilkini aç
+            act = [v for v in st["vpn"] if v[2]]
+            targets = act or st["vpn"][:1]
+            on = not act
+            for name, uuid, _ in targets:
+                set_vpn(name, uuid, on, done=lambda: threading.Thread(target=self._refresh, daemon=True).start())
+            ids = {v[1] for v in targets}
+            st["vpn"] = [(n, u, on if u in ids else a) for n, u, a in st["vpn"]]
         elif key == "dnd":
             st["dnd"] = not st["dnd"]
             run_bg(["xfconf-query", "-c", "xfce4-notifyd", "-p", "/do-not-disturb", "-t", "bool", "-s",

@@ -1,4 +1,5 @@
-"""Liquid — Wi-Fi: ağ listesi, kayıtlı ağa bağlanma, şifre kartı (macOS'taki "… için şifre girin").
+"""Liquid — Wi-Fi: ağ listesi, kayıtlı ağa bağlanma, şifre kartı (macOS'taki "… için şifre girin");
+VPN: NetworkManager'daki WireGuard/VPN bağlantılarını açıp kapatma.
 
 Eski menü: liste menü açılırken ana iş parçacığında nmcli ile alınıyordu (çubuk donabiliyordu) ve
 şifreli, kayıtlı olmayan ağa tıklamak `nmcli dev wifi connect` ile şifre sormadan sessizce başarısız
@@ -47,8 +48,8 @@ def scan():
     return on, ssid, sig, nets
 
 
-def _notify(msg):
-    subprocess.Popen(["notify-send", "-i", "network-wireless", "Wi-Fi", msg],
+def _notify(msg, title="Wi-Fi", icon="network-wireless"):
+    subprocess.Popen(["notify-send", "-i", icon, title, msg],
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
 
 
@@ -84,6 +85,34 @@ def connect(ssid, security):
             return
         if not ok:
             GLib.idle_add(_notify, t("wifi_failed").format(ssid))
+    threading.Thread(target=work, daemon=True).start()
+
+
+# ----------------------------- VPN (WireGuard, OpenVPN…) -----------------------------
+VPN_TYPES = ("wireguard", "vpn")
+
+
+def vpns():
+    """NetworkManager'daki VPN bağlantıları: [(ad, uuid, etkin)] — WireGuard ve eklenti VPN'leri."""
+    out = []
+    for line in _run(["nmcli", "-t", "-f", "NAME,UUID,TYPE,ACTIVE", "connection", "show"]).splitlines():
+        parts = re.split(r"(?<!\\):", line)
+        if len(parts) == 4 and parts[2] in VPN_TYPES:
+            out.append((parts[0].replace("\\:", ":"), parts[1], parts[3] == "yes"))
+    return sorted(out, key=lambda v: v[0].lower())
+
+
+def set_vpn(name, uuid, on, done=None):
+    """VPN'i aç/kapat (arka planda); başarısızsa bildirim. done() ana döngüde, iş bitince çağrılır."""
+    def work():
+        r = subprocess.run(["env", "LC_ALL=C.UTF-8", "nmcli", "connection", "up" if on else "down", "uuid", uuid],
+                           capture_output=True, text=True, timeout=60)
+        if r.returncode != 0:
+            err = (r.stderr.strip().splitlines() or [""])[-1].replace("Error: ", "")
+            GLib.idle_add(_notify, t("vpn_failed").format(name) + (f"\n{err}" if err else ""), "VPN",
+                          "network-vpn")
+        if done is not None:
+            GLib.idle_add(lambda: (done(), False)[1])
     threading.Thread(target=work, daemon=True).start()
 
 
