@@ -7,6 +7,7 @@ Düzen (genişlik 380):
   [Ekran parlaklığı ───────────────]
   [Ses ─────────────────────────────]
   [Şimdi Çalıyor        ▶  ⏭]
+  [Sistem Raporları             ›]
 Menü çubuğundaki CC glifine tıklayınca (SIGUSR1) sağ üstte açılır; dışarı tıklayınca kapanır.
 
 Çalıştırma: python3 -m liquid.controlcenter [--show]
@@ -14,6 +15,7 @@ Menü çubuğundaki CC glifine tıklayınca (SIGUSR1) sağ üstte açılır; dı
 import os
 import re
 import signal
+import shutil
 import subprocess
 import sys
 import threading
@@ -197,6 +199,7 @@ class ControlCenter(Gtk.Window):
             self.set_visual(vis)
         self.mx, self.my, self.mw, self.mh = screen_geometry()
         self.shadow = 16
+        self.reports_command = shutil.which("mintreport")
         self._fit_layout()
         self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK |
                         Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.SCROLL_MASK)
@@ -220,6 +223,8 @@ class ControlCenter(Gtk.Window):
         """VPN var/yok üst blok ve panel sınırları sabit kalsın."""
         self.conn_h = 160
         self.H = PAD * 2 + self.conn_h + 64 + 2 * 76 + 84 + 4 * GAP
+        if self.reports_command:
+            self.H += 48 + GAP
         self.set_size_request(W + 2 * self.shadow, self.H + 2 * self.shadow)
         self.resize(W + 2 * self.shadow, self.H + 2 * self.shadow)
 
@@ -450,6 +455,13 @@ class ControlCenter(Gtk.Window):
         self._icon(cr, "media-skip-forward-symbolic", px + 46, y + 32, 20, design.icon_ink(0.9))
         self.regions.append((px, y + 24, 32, 36, "play"))
         self.regions.append((px + 40, y + 24, 32, 36, "next"))
+        if self.reports_command:
+            y += 84 + GAP
+            self._tile(cr, x0, y, W - 2 * PAD, 48)
+            self._icon(cr, "mintreport-symbolic", x0 + 14, y + 14, 20, design.icon_ink(0.8))
+            self._text(cr, t("system_reports"), x0 + 46, y + 14, 10.5, width=W - 2 * PAD - 90)
+            self._icon(cr, "go-next-symbolic", W - PAD - 30, y + 16, 16, design.icon_ink(0.6))
+            self.regions.append((x0, y, W - 2 * PAD, 48, "reports"))
         return True
 
     def _art_surface(self, path):
@@ -530,6 +542,9 @@ class ControlCenter(Gtk.Window):
         elif key == "shot":
             self.hide()
             GLib.timeout_add(300, lambda: (run_bg(["xfce4-screenshooter", "-r"]), False)[1])
+        elif key == "reports" and self.reports_command:
+            self.hide()
+            run_bg([self.reports_command, "--reports"])
         elif key in ("play", "next"):
             run_bg(["playerctl", "play-pause" if key == "play" else "next"])
             GLib.timeout_add(400, lambda: (threading.Thread(target=self._refresh, daemon=True).start(), False)[1])

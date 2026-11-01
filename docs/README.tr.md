@@ -5,6 +5,9 @@ masaüstü arayüzüdür. Menü çubuğu, cam dock, widget'lar, uygulama ekranı
 Bildirim Merkezi ve Control Center ekler. Python 3, GTK 3 ve cairo ile yazılmıştır.
 Bir işletim sistemi veya pencere yöneticisi değildir.
 
+Mint'in `mintreport` uygulaması kuruluysa Sistem Raporları'na Kontrol Merkezi'nden
+erişebilirsin. Bluetooth ve Sistem Raporları simgeleri menü çubuğunda gösterilmez.
+
 ![Linux Mint Xfce üzerinde Pear: armut menü simgesi, saydam menü çubuğu ve cam dock](../.github/images/pear-desktop.png)
 
 *Linux Mint Xfce üzerinde çalışan Pear'in menü çubuğu ve cam dock'u. Görseli tam boyutta açmak için üzerine tıklayabilirsin.*

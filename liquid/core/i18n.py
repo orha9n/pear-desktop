@@ -76,6 +76,7 @@ S = {
     "display": ("Display", "Ekran"), "sound": ("Sound", "Ses"), "not_playing": ("Not Playing", "Çalmıyor"),
     "displays": ("Displays", "Ekranlar"), "brightness": ("Brightness", "Parlaklık"),
     "dark_mode": ("Dark Mode", "Karanlık Mod"), "screenshot": ("Screenshot", "Ekran Görüntüsü"),
+    "system_reports": ("System Reports", "Sistem Raporları"),
     "open": ("Open", "Aç"), "new_window": ("New Window", "Yeni Pencere"), "keep_in_dock": ("Keep in Dock", "Dock'ta Tut"),
     "remove_from_dock": ("Remove from Dock", "Dock'tan Kaldır"), "quit": ("Quit", "Çık"),
     # widget'lar

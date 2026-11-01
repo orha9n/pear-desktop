@@ -24,6 +24,7 @@ is still required. [Türkçe kurulum ve kullanım kılavuzu](docs/README.tr.md).
 - Calendar, analog clock and photo widgets, widget gallery and notification history.
 - Application launcher; search for applications and local file names; calculator and web search.
 - Control Center for audio, brightness, dark mode, Bluetooth, media and notifications.
+- Open System Reports from Control Center when Mint's `mintreport` is installed; Bluetooth and System Reports icons stay hidden in the menu bar.
 - Fullscreen window controls, optional picom blur and Turkish/English interface text.
 
 ## Before installing

@@ -23,9 +23,18 @@ from gi.repository import Gtk, Gdk, GdkPixbuf, Gio, GLib, GObject, XApp  # noqa:
 
 ICON = 16                                   # macOS menü çubuğu simgesi
 SN_WATCHER_DESKTOP = "/etc/xdg/autostart/xapp-sn-watcher.desktop"
-# çubuğun kendi simgeleri zaten gösterdiği için tepside tekrar edilmeyenler (macOS'ta tek Wi-Fi simgesi var)
-SKIP = {"nm-applet", "xfce4-power-manager", "blueman", "blueman-tray", "blueman-applet"}
+# Tekrarlanan bağlantı/güç simgeleri ve kullanıcı tarafından gizlenen Sistem Raporları.
+SKIP = {"nm-applet", "xfce4-power-manager", "blueman", "blueman-tray", "blueman-applet",
+        "mintreport", "mintreport.py"}
 CHATGPT_ICON = Path(__file__).resolve().parent.parent / "assets/tray/chatgpt-symbolic.svg"
+
+
+def hidden_icon(proxy):
+    name = (proxy.props.name or "").replace("org.x.StatusIcon.", "").casefold()
+    icon = (proxy.props.icon_name or "").casefold()
+    # SNI köprüsü açılışta uygulama adını geçici bir D-Bus adı olarak verebilir.
+    return (name in SKIP or icon.startswith(("blueman-", "bluetooth-", "mintreport-"))
+            or icon in {"blueman", "bluetooth", "mintreport"})
 
 
 def start_sn_watcher():
@@ -91,13 +100,19 @@ class TrayIcon(Gtk.EventBox):
         proxy.props.icon_size = ICON
         flags = GObject.BindingFlags.DEFAULT | GObject.BindingFlags.SYNC_CREATE
         proxy.bind_property("tooltip-text", self, "tooltip-markup", flags)
-        proxy.bind_property("visible", self, "visible", flags)
+        self.set_no_show_all(True)
+        for prop in ("visible", "name", "icon-name"):
+            proxy.connect(f"notify::{prop}", self._sync_visibility)
         proxy.connect("notify::icon-name", lambda *_: self._icon())
         proxy.connect("notify::tooltip-text", lambda *_: self._icon())
         self.connect("button-press-event", self._press)
         self.connect("button-release-event", self._release)
         self.connect("scroll-event", self._scroll)
         self._icon()
+        self._sync_visibility()
+
+    def _sync_visibility(self, *_):
+        self.set_visible(self.proxy.props.visible and not hidden_icon(self.proxy))
 
     def name(self):
         return (self.proxy.props.name or "").replace("org.x.StatusIcon.", "").lower()
@@ -171,12 +186,12 @@ class Tray(Gtk.Box):
 
     def _added(self, mon, proxy):
         key = self._key(proxy)
-        if key in self.icons or (proxy.props.name or "").replace("org.x.StatusIcon.", "").casefold() in SKIP:
+        if key in self.icons:
             return
         ic = self.icons[key] = TrayIcon(proxy, self.light)
         self.pack_start(ic, False, False, 0)
-        ic.show_all()
-        ic.set_visible(proxy.props.visible)
+        ic.image.show()
+        ic._sync_visibility()
         self._sort()
 
     def set_light(self, light):
