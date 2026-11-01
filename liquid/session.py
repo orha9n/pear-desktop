@@ -1,7 +1,8 @@
-"""Liquid — oturum bekçisi: tüm bileşenleri başlatır, kapanırsa yeniden açar, XFCE panelini kapatır.
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — oturum bekçisi: tüm bileşenleri başlatır, kapanırsa yeniden açar, XFCE panelini kapatır.
 
 Tek autostart girdisi bunu çalıştırır (~/.config/autostart/liquid.desktop).
-PLAN.md §5: XFCE panelini kapatırken `xfce4-panel --quit` DÖNGÜDE çalıştırılmaz (her biri
+XFCE panelini kapatırken `xfce4-panel --quit` DÖNGÜDE çalıştırılmaz (her biri
 "xfce4-panel" adlı ayrı süreç olup hata penceresi açıyordu) → gerçek panel PID'ine SIGTERM.
 
 Çalıştırma: python3 -m liquid.session

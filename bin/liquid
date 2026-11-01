@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-only
 # Liquid komutu: liquid toggle spotlight | liquid start | liquid stop | liquid status
 ROOT="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
 exec env PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" python3 -m liquid.ctl "$@"

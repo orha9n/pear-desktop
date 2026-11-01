@@ -1,8 +1,9 @@
-"""Liquid — Control Center (macOS 26/27, Liquid Glass modüller). GTK + cairo, ek bağımlılık yok.
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — Control Center (macOS 26/27, Liquid Glass modüller). GTK + cairo, ek bağımlılık yok.
 
-Düzen (genişlik 330):
-  [Bağlantı: Wi-Fi / Bluetooth / Karanlık Mod]  [Odak]
-                                               [Ekranlar][Ekran Görüntüsü]
+Düzen (genişlik 380):
+  [Bağlantı: Wi-Fi / Bluetooth / VPN]  [Odak / Karanlık Mod]
+  [Ekranlar]                         [Ekran Görüntüsü]
   [Ekran parlaklığı ───────────────]
   [Ses ─────────────────────────────]
   [Şimdi Çalıyor        ▶  ⏭]
@@ -31,10 +32,11 @@ from .wifi import vpns, set_vpn  # noqa: E402
 from .core import design, wallpaper, daemon, screen_geometry, restart_on_monitor_change  # noqa: E402
 from .core.i18n import t  # noqa: E402
 
-W = 330
-PAD = 12
-GAP = 10
-TILE_R = 20
+W = 380
+PAD = 14
+GAP = 12
+TILE_R = 18
+SLIDER_H = 26
 
 
 def run(cmd, timeout=3):
@@ -182,7 +184,7 @@ def player():
 class ControlCenter(Gtk.Window):
     def __init__(self):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
-        self.set_title("Liquid Control Center")
+        self.set_title("Pear Control Center")
         compositor.mark(self)
         self.set_decorated(False)
         self.set_skip_taskbar_hint(True)
@@ -195,7 +197,7 @@ class ControlCenter(Gtk.Window):
             self.set_visual(vis)
         self.mx, self.my, self.mw, self.mh = screen_geometry()
         self.shadow = 16
-        self._fit_rows(3)
+        self._fit_layout()
         self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK |
                         Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.SCROLL_MASK)
         self.connect("draw", self.on_draw)
@@ -214,11 +216,10 @@ class ControlCenter(Gtk.Window):
         self._shown_at = 0.0
         self._art = (None, None)
 
-    def _fit_rows(self, n):
-        """Bağlantı kartı n satır (Wi-Fi, Bluetooth, Karanlık Mod [+ VPN]); her satır 46 px."""
-        self.conn_h = 16 + n * 46                       # 3 satır → 154
-        # yükseklik: bağlantı bloğu + 2 kaydırıcı 64 + oynatıcı 72 + boşluklar
-        self.H = PAD * 2 + self.conn_h + GAP + 64 + GAP + 64 + GAP + 72
+    def _fit_layout(self):
+        """VPN var/yok üst blok ve panel sınırları sabit kalsın."""
+        self.conn_h = 160
+        self.H = PAD * 2 + self.conn_h + 64 + 2 * 76 + 84 + 4 * GAP
         self.set_size_request(W + 2 * self.shadow, self.H + 2 * self.shadow)
         self.resize(W + 2 * self.shadow, self.H + 2 * self.shadow)
 
@@ -262,9 +263,6 @@ class ControlCenter(Gtk.Window):
 
     def _apply_state(self, st):
         self.st.update(st)
-        n = 4 if st["vpn"] else 3                       # VPN tanımlıysa macOS gibi bağlantı kartında satırı
-        if 16 + n * 46 != self.conn_h:
-            self._fit_rows(n)
         self.queue_draw()
         return False
 
@@ -287,12 +285,14 @@ class ControlCenter(Gtk.Window):
             Gdk.cairo_set_source_pixbuf(cr, pb, x, y)
             cr.paint()
 
-    def _text(self, cr, s, x, y, size, weight="Semi-Bold", rgba=None, width=None):
+    def _text(self, cr, s, x, y, size, weight="Semi-Bold", rgba=None, width=None, align=Pango.Alignment.LEFT):
         lay = PangoCairo.create_layout(cr)
         lay.set_font_description(Pango.FontDescription(f"{design.FONT} {weight} {size}"))
         if width:
             lay.set_width(int(width * Pango.SCALE))
             lay.set_ellipsize(Pango.EllipsizeMode.END)
+        lay.set_alignment(align)
+        lay.set_single_paragraph_mode(True)
         lay.set_text(s, -1)
         cr.move_to(x, y)
         cr.set_source_rgba(*(rgba or design.ink(0.88)))
@@ -300,13 +300,16 @@ class ControlCenter(Gtk.Window):
 
     def _tile(self, cr, x, y, w, h, r=TILE_R):
         design.rrect(cr, x, y, w, h, r)
-        cr.set_source_rgba(*design.tile(0.42))
+        cr.set_source_rgba(*design.tile(0.56))
         cr.fill()
         design.rrect(cr, x + 0.5, y + 0.5, w - 1, h - 1, r)
-        g = cairo.LinearGradient(0, y, 0, y + h)
-        g.add_color_stop_rgba(0, 1, 1, 1, 0.8)
-        g.add_color_stop_rgba(1, 1, 1, 1, 0.15)
-        cr.set_source(g)
+        if design.dark():
+            g = cairo.LinearGradient(0, y, 0, y + h)
+            g.add_color_stop_rgba(0, 1, 1, 1, 0.42)
+            g.add_color_stop_rgba(1, 1, 1, 1, 0.10)
+            cr.set_source(g)
+        else:
+            cr.set_source_rgba(0, 0, 0, 0.18)
         cr.set_line_width(1)
         cr.stroke()
 
@@ -327,64 +330,80 @@ class ControlCenter(Gtk.Window):
         compositor.shape(self, self.shadow, self.shadow, W, self.H, 26)
         cr.translate(self.shadow, self.shadow)
         design.liquid_glass(cr, 0, 0, W, self.H, 26, backdrop=None if real else self.backdrop,
-                            tint=design.glass_tint(0.34), dark=design.dark(), shadow=not real)
+                            tint=design.glass_tint(0.48), dark=design.dark(), shadow=not real)
+        if not design.dark():
+            design.rrect(cr, 0.5, 0.5, W - 1, self.H - 1, 25.5)
+            cr.set_source_rgba(0, 0, 0, 0.18)
+            cr.set_line_width(1)
+            cr.stroke()
         self.regions = []
         st = self.st
         x0, y = PAD, PAD
-        bw = (W - 2 * PAD - GAP) * 0.53
+        bw = 200
         sw = W - 2 * PAD - GAP - bw
         # --- bağlantı kartı ---
         ch = self.conn_h
         self._tile(cr, x0, y, bw, ch)
         rows = [("wifi", "network-wireless-symbolic", "Wi-Fi",
                  st["wifi"][1] or (t("on") if st["wifi"][0] else t("off")), st["wifi"][0]),
-                ("bt", "bluetooth-active-symbolic", "Bluetooth", t("on") if st["bt"] else t("off"), st["bt"]),
-                ("dark", "weather-clear-night-symbolic", t("dark_mode"), t("on") if st["dark"] else t("off"),
-                 st["dark"])]
+                ("bt", "bluetooth-active-symbolic", "Bluetooth", t("on") if st["bt"] else t("off"), st["bt"])]
         if st["vpn"]:
             act = [v[0] for v in st["vpn"] if v[2]]
             rows.append(("vpn", "network-vpn-symbolic", "VPN", ", ".join(act) if act else t("off"), bool(act)))
         for i, (key, icon, title, sub, on) in enumerate(rows):
-            ry = y + 14 + i * 46
-            self._circle_btn(cr, x0 + 28, ry + 15, 15, on, icon)
-            self._text(cr, title, x0 + 52, ry + 2, 9.5, "Semi-Bold", width=bw - 60)
-            self._text(cr, sub, x0 + 52, ry + 17, 8, "Regular", design.ink(0.55), width=bw - 60)
-            self.regions.append((x0, ry, bw, 40, key))
-        # --- Odak (Rahatsız Etme) ---
+            row_h = (ch - 16) / len(rows)
+            ry = y + 8 + i * row_h
+            cy = ry + row_h / 2
+            self._circle_btn(cr, x0 + 28, cy, 16, on, icon)
+            self._text(cr, title, x0 + 54, cy - 18, 10.5, width=bw - 66)
+            self._text(cr, sub, x0 + 54, cy + 2, 9, "Regular", design.ink(0.65), width=bw - 66)
+            self.regions.append((x0, ry, bw, row_h, key))
+        # --- Odak ve görünüm: bağlantılardan ayrı, eşit boyutlu kartlar ---
         fx = x0 + bw + GAP
-        self._tile(cr, fx, y, sw, 72)
-        self._circle_btn(cr, fx + 26, y + 36, 15, st["dnd"], "notifications-disabled-symbolic"
-                         if Gtk.IconTheme.get_default().has_icon("notifications-disabled-symbolic")
-                         else "weather-clear-night-symbolic")
-        self._text(cr, t("focus"), fx + 48, y + 20, 9.5, "Semi-Bold", width=sw - 52)
-        self._text(cr, t("on") if st["dnd"] else t("off"), fx + 48, y + 36, 8, "Regular", design.ink(0.55))
-        self.regions.append((fx, y, sw, 72, "dnd"))
-        # --- iki kare kutucuk ---
-        qw = (sw - GAP) / 2
-        for j, (key, icon, label) in enumerate((("mirror", "video-display-symbolic", t("display")),
-                                                ("shot", "camera-photo-symbolic", t("screenshot")))):
-            qx = fx + j * (qw + GAP)
-            qh = ch - 82                                # bağlantı kartı uzarsa (VPN satırı) birlikte uzar
-            dy = (qh - 72) / 2
-            self._tile(cr, qx, y + 82, qw, qh)
-            self._icon(cr, icon, qx + qw / 2 - 10, y + 96 + dy, 20, design.icon_ink(0.85))
-            lay = PangoCairo.create_layout(cr)
-            lay.set_font_description(Pango.FontDescription(f"{design.FONT} Medium 7"))
-            lay.set_width(int((qw - 6) * Pango.SCALE))
-            lay.set_alignment(Pango.Alignment.CENTER)
-            lay.set_wrap(Pango.WrapMode.WORD)
-            lay.set_text(label, -1)
-            cr.move_to(qx + 3, y + 122 + dy)
-            cr.set_source_rgba(*design.ink(0.75))
-            PangoCairo.show_layout(cr, lay)
-            self.regions.append((qx, y + 82, qw, qh, key))
+        small_h = (ch - GAP) / 2
+        focus_icon = ("notifications-disabled-symbolic"
+                      if Gtk.IconTheme.get_default().has_icon("notifications-disabled-symbolic")
+                      else "weather-clear-night-symbolic")
+        for i, (key, title, icon) in enumerate((("dnd", t("focus"), focus_icon),
+                                               ("dark", t("dark_mode"), "weather-clear-night-symbolic"))):
+            ty = y + i * (small_h + GAP)
+            self._tile(cr, fx, ty, sw, small_h)
+            self._circle_btn(cr, fx + 25, ty + small_h / 2, 15, st[key], icon)
+            self._text(cr, title, fx + 48, ty + small_h / 2 - 18, 10, width=sw - 56)
+            self._text(cr, t("on") if st[key] else t("off"), fx + 48, ty + small_h / 2 + 2,
+                       9, "Regular", design.ink(0.65), width=sw - 56)
+            self.regions.append((fx, ty, sw, small_h, key))
         y += ch + GAP
+        # --- ekran kısayolları: VPN'den bağımsız, yatay ve okunaklı ---
+        qw = (W - 2 * PAD - GAP) / 2
+        for j, (key, icon, label) in enumerate((("mirror", "video-display-symbolic", t("displays")),
+                                                ("shot", "camera-photo-symbolic", t("screenshot")))):
+            qx = x0 + j * (qw + GAP)
+            self._tile(cr, qx, y, qw, 64)
+            self._icon(cr, icon, qx + 14, y + 21, 22, design.icon_ink(0.9))
+            lay = PangoCairo.create_layout(cr)
+            lay.set_font_description(Pango.FontDescription(f"{design.FONT} Medium 10"))
+            lay.set_width(int((qw - 58) * Pango.SCALE))
+            lay.set_wrap(Pango.WrapMode.WORD)
+            lay.set_height(-2)
+            lay.set_ellipsize(Pango.EllipsizeMode.END)
+            lay.set_text(label, -1)
+            _, text_h = lay.get_pixel_size()
+            cr.move_to(qx + 46, y + (64 - text_h) / 2)
+            cr.set_source_rgba(*design.ink(0.9))
+            PangoCairo.show_layout(cr, lay)
+            self.regions.append((qx, y, qw, 64, key))
+        y += 64 + GAP
         # --- kaydırıcılar ---
-        for key, title, icon, val in (("bri", t("display"), "display-brightness-symbolic", st["bri"]),
+        for key, title, icon, val in (("bri", t("brightness"), "display-brightness-symbolic", st["bri"]),
                                       ("vol", t("sound"), "audio-volume-high-symbolic", st["vol"])):
-            self._tile(cr, x0, y, W - 2 * PAD, 64)
-            self._text(cr, title, x0 + 14, y + 9, 9.5, "Semi-Bold")
-            sx, sy, sl, sh = x0 + 14, y + 32, W - 2 * PAD - 28, 22
+            self._tile(cr, x0, y, W - 2 * PAD, 76)
+            self._text(cr, title, x0 + 14, y + 10, 10.5)
+            percent = t("battery_percentage").format(round(max(0, min(100, val))))
+            self._text(cr, percent, W - PAD - 64, y + 11, 9.5, "Medium", design.ink(0.65),
+                       width=50, align=Pango.Alignment.RIGHT)
+            sx, sy, sl, sh = x0 + 44, y + 36, W - 2 * PAD - 58, SLIDER_H
+            self._icon(cr, icon, x0 + 14, sy + 4, 18, design.icon_ink(0.8))
             design.rrect(cr, sx, sy, sl, sh, sh / 2)
             cr.set_source_rgba(*design.ink(0.10))
             cr.fill()
@@ -393,23 +412,22 @@ class ControlCenter(Gtk.Window):
             cr.set_source_rgba(1, 1, 1, 1)
             cr.fill_preserve()
             # gerçek camın arkası beyaz pencereyken beyaz dolgu zeminde kayboluyordu → ince kenar
-            cr.set_source_rgba(*design.ink(0.10))
+            cr.set_source_rgba(*design.ink(0.10 if design.dark() else 0.22))
             cr.set_line_width(1)
             cr.stroke()
-            self._icon(cr, icon, sx + 5, sy + 3, 16, (0.35, 0.35, 0.38, 1))
             design.circle(cr, sx + fw - sh / 2, sy + sh / 2, sh / 2 - 0.5)
             cr.set_source_rgba(1, 1, 1, 1)
             cr.fill_preserve()
-            cr.set_source_rgba(0, 0, 0, 0.12)
+            cr.set_source_rgba(0, 0, 0, 0.12 if design.dark() else 0.22)
             cr.set_line_width(1)
             cr.stroke()
             self.regions.append((sx, sy - 6, sl, sh + 12, key))
-            y += 64 + GAP
+            y += 76 + GAP
         # --- Şimdi Çalıyor ---
-        self._tile(cr, x0, y, W - 2 * PAD, 72)
+        self._tile(cr, x0, y, W - 2 * PAD, 84)
         status, title, artist, art = st["player"]
-        ax, ay = x0 + 12, y + 12
-        design.rrect(cr, ax, ay, 48, 48, 9)
+        ax, ay = x0 + 14, y + 16
+        design.rrect(cr, ax, ay, 52, 52, 12)
         cr.save()
         cr.clip()
         surf = self._art_surface(art)
@@ -420,15 +438,18 @@ class ControlCenter(Gtk.Window):
         cr.paint()
         cr.restore()
         if surf is None:
-            self._icon(cr, "audio-x-generic-symbolic", ax + 14, ay + 14, 20, design.icon_ink(0.8))
-        self._text(cr, title or t("not_playing"), ax + 60, ay + 7, 9.5, "Semi-Bold", width=150)
-        self._text(cr, artist, ax + 60, ay + 24, 8, "Regular", design.ink(0.55), width=150)
-        px = W - PAD - 76
+            self._icon(cr, "audio-x-generic-symbolic", ax + 15, ay + 15, 22, design.icon_ink(0.7))
+        px = W - PAD - 86
+        tx = ax + 64
+        text_w = px - 12 - tx
+        self._text(cr, title or t("not_playing"), tx, y + (22 if artist else 33), 10.5, width=text_w)
+        if artist:
+            self._text(cr, artist, tx, y + 44, 9, "Regular", design.ink(0.65), width=text_w)
         self._icon(cr, "media-playback-pause-symbolic" if status == "Playing" else "media-playback-start-symbolic",
-                   px, y + 26, 20, design.icon_ink(0.9))
-        self._icon(cr, "media-skip-forward-symbolic", px + 36, y + 26, 20, design.icon_ink(0.9))
-        self.regions.append((px - 6, y + 18, 32, 36, "play"))
-        self.regions.append((px + 30, y + 18, 32, 36, "next"))
+                   px + 6, y + 32, 20, design.icon_ink(0.9))
+        self._icon(cr, "media-skip-forward-symbolic", px + 46, y + 32, 20, design.icon_ink(0.9))
+        self.regions.append((px, y + 24, 32, 36, "play"))
+        self.regions.append((px + 40, y + 24, 32, 36, "next"))
         return True
 
     def _art_surface(self, path):
@@ -438,7 +459,7 @@ class ControlCenter(Gtk.Window):
         if path and os.path.exists(path):
             try:
                 from gi.repository import GdkPixbuf
-                pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(path, 48, 48, False)
+                pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(path, 52, 52, False)
                 s = Gdk.cairo_surface_create_from_pixbuf(pb, 1, None)
             except Exception:
                 s = None
@@ -454,7 +475,8 @@ class ControlCenter(Gtk.Window):
         return None, 0, 0
 
     def _slide(self, key, x, rx, rw):
-        v = int(max(0, min(100, (x - self.shadow - rx - 11) / max(1, rw - 22) * 100)))
+        v = round(max(0, min(100, (x - self.shadow - rx - SLIDER_H / 2) /
+                                max(1, rw - SLIDER_H) * 100)))
         self.st[key] = v
         self.apply.set(key, v)
         self.queue_draw()

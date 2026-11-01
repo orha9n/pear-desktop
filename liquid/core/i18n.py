@@ -1,4 +1,5 @@
-"""Liquid — metinler (Türkçe + İngilizce; diğer dillerde İngilizce)."""
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — metinler (Türkçe + İngilizce; diğer dillerde İngilizce)."""
 import os
 
 S = {
@@ -28,9 +29,9 @@ S = {
     "go_computer": ("Computer", "Bilgisayar"), "go_network": ("Network", "Ağ"),
     "go_apps": ("Applications", "Uygulamalar"), "minimize_all": ("Minimize All", "Tümünü Küçült"),
     "empty_trash": ("Empty Trash", "Çöp Kutusunu Boşalt"), "untitled_folder": ("untitled folder", "adsız klasör"),
-    # Elma menüsü
-    "a_about": ("About This Mac", "Bu Mac Hakkında"), "a_settings": ("System Settings…", "Sistem Ayarları…"),
-    "a_appstore": ("App Store", "App Store"), "a_recent": ("Recent Items", "Son Kullanılanlar"),
+    # Liquid menüsü
+    "a_about": ("About This Computer", "Bu Bilgisayar Hakkında"), "a_settings": ("System Settings…", "Sistem Ayarları…"),
+    "a_appstore": ("Software Manager", "Yazılım Yöneticisi"), "a_recent": ("Recent Items", "Son Kullanılanlar"),
     "a_no_recent": ("No Recent Items", "Son Kullanılan Yok"), "a_clear": ("Clear Menu", "Menüyü Temizle"),
     "a_forcequit": ("Force Quit…", "Zorla Çık…"), "a_sleep": ("Sleep", "Uyku"),
     "a_restart": ("Restart…", "Yeniden Başlat…"), "a_shutdown": ("Shut Down…", "Kapat…"),
@@ -53,6 +54,14 @@ S = {
     # durum menüleri
     "battery": ("Battery", "Pil"), "power_source": ("Power Source", "Güç Kaynağı"),
     "power_adapter": ("Power Adapter", "Güç Adaptörü"), "battery_settings": ("Battery Settings…", "Pil Ayarları…"),
+    "battery_percentage": ("{}%", "%{}"),
+    "battery_time_left": ("Estimated time remaining: {}", "Tahmini kalan süre: {}"),
+    "battery_time_to_full": ("Estimated time to full: {}", "Tam doluma tahmini süre: {}"),
+    "battery_time_unavailable": ("Remaining time unavailable", "Kalan süre hesaplanamıyor"),
+    "battery_charging": ("Charging", "Şarj oluyor"),
+    "battery_pending_charge": ("Waiting to charge", "Şarj bekleniyor"),
+    "battery_full": ("Fully charged", "Tam dolu"), "battery_empty": ("Battery empty", "Pil boş"),
+    "battery_hours": ("{} hr", "{} sa"), "battery_minutes": ("{} min", "{} dk"),
     "wifi_settings": ("Wi-Fi Settings…", "Wi-Fi Ayarları…"),
     "vpn_failed": ("Could not change VPN “{}”.", "“{}” VPN'i değiştirilemedi."),
     "connected": ("Connected", "Bağlı"),
@@ -65,6 +74,7 @@ S = {
     "on": ("On", "Açık"), "off": ("Off", "Kapalı"), "not_connected": ("Not Connected", "Bağlı Değil"),
     "focus": ("Focus", "Odak"), "dnd": ("Do Not Disturb", "Rahatsız Etme"),
     "display": ("Display", "Ekran"), "sound": ("Sound", "Ses"), "not_playing": ("Not Playing", "Çalmıyor"),
+    "displays": ("Displays", "Ekranlar"), "brightness": ("Brightness", "Parlaklık"),
     "dark_mode": ("Dark Mode", "Karanlık Mod"), "screenshot": ("Screenshot", "Ekran Görüntüsü"),
     "open": ("Open", "Aç"), "new_window": ("New Window", "Yeni Pencere"), "keep_in_dock": ("Keep in Dock", "Dock'ta Tut"),
     "remove_from_dock": ("Remove from Dock", "Dock'tan Kaldır"), "quit": ("Quit", "Çık"),

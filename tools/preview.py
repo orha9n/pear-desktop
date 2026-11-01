@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-only
 """Geliştirme önizlemesi: bir bileşeni MacTahoe ikonlarıyla (sadece bu süreçte) çalıştırır.
 Kullanım: python3 tools/preview.py dock|bar|widgets|launcher [saniye]"""
 import os

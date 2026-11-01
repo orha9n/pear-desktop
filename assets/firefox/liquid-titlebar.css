@@ -1,0 +1,97 @@
+/* Liquid — Firefox on Linux. Only the browser's custom titlebar is styled.
+ * Browser actions, native fullscreen visibility and high contrast stay native. */
+@media (-moz-platform: linux) and (not (forced-colors: active)) {
+  :root[customtitlebar]:not([inFullscreen]) {
+    --window-controls-size: 88px !important;
+  }
+
+  :root[customtitlebar]:not([inFullscreen]) .titlebar-buttonbox-container {
+    order: -1 !important;
+    margin: 0 !important;
+    padding: 0 8px 0 10px !important;
+    align-self: stretch !important;
+  }
+
+  :root[customtitlebar]:not([inFullscreen]) .titlebar-buttonbox {
+    appearance: none !important;
+    align-items: center !important;
+    gap: 0 !important;
+  }
+
+  :root[customtitlebar]:not([inFullscreen]) .titlebar-button {
+    appearance: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 22px !important;
+    min-width: 22px !important;
+    height: 30px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 5px !important;
+    -moz-window-dragging: no-drag !important;
+  }
+
+  :root[customtitlebar]:not([inFullscreen]) .titlebar-close { order: 0 !important; --liquid-control: #ff5f57; }
+  :root[customtitlebar]:not([inFullscreen]) .titlebar-min { order: 1 !important; --liquid-control: #febc2e; }
+  :root[customtitlebar]:not([inFullscreen]) :is(.titlebar-max, .titlebar-restore) { order: 2 !important; --liquid-control: #28c840; }
+
+  :root[customtitlebar]:not([inFullscreen]) .titlebar-button > .toolbarbutton-icon {
+    appearance: none !important;
+    box-sizing: border-box !important;
+    width: 13px !important;
+    height: 13px !important;
+    min-width: 13px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 1px solid rgb(0 0 0 / 14%) !important;
+    border-radius: 50% !important;
+    background-color: var(--liquid-control) !important;
+    background-image: none !important;
+    background-position: center !important;
+    background-size: 9px 9px !important;
+    background-repeat: no-repeat !important;
+    list-style-image: none !important;
+    color: rgb(0 0 0 / 65%) !important;
+    stroke: currentColor !important;
+    -moz-context-properties: stroke !important;
+    transition: filter 100ms ease !important;
+  }
+
+  :root[customtitlebar]:not([inFullscreen]) .titlebar-buttonbox:hover .titlebar-close > .toolbarbutton-icon {
+    background-image: -moz-symbolic-icon(window-close-symbolic) !important;
+  }
+  :root[customtitlebar]:not([inFullscreen]) .titlebar-buttonbox:hover .titlebar-min > .toolbarbutton-icon {
+    background-image: -moz-symbolic-icon(window-minimize-symbolic) !important;
+  }
+  :root[customtitlebar]:not([inFullscreen]) .titlebar-buttonbox:hover :is(.titlebar-max, .titlebar-restore) > .toolbarbutton-icon {
+    background-image: -moz-symbolic-icon(window-maximize-symbolic) !important;
+  }
+  :root[customtitlebar]:not([inFullscreen]) .titlebar-button:active > .toolbarbutton-icon {
+    filter: brightness(0.8);
+  }
+  :root[customtitlebar]:not([inFullscreen]):-moz-window-inactive .titlebar-button > .toolbarbutton-icon {
+    background-color: #b8b8bc !important;
+  }
+  :root[customtitlebar]:not([inFullscreen]) .titlebar-button:focus-visible {
+    outline: 2px solid var(--focus-outline-color) !important;
+    outline-offset: -2px !important;
+  }
+
+  :root[customtitlebar]:not([inFullscreen]) #TabsToolbar .titlebar-spacer[type="pre-tabs"] {
+    width: 6px !important;
+  }
+  :root[customtitlebar]:not([inFullscreen]) #TabsToolbar .titlebar-spacer[type="post-tabs"] {
+    width: 12px !important;
+  }
+  :root[customtitlebar]:not([inFullscreen]):not([uidensity="touch"]) #TabsToolbar {
+    --tab-min-height: 32px !important;
+    --tab-margin-block: 4px !important;
+    --tabstrip-min-height: 40px !important;
+  }
+  :root[customtitlebar]:not([inFullscreen]) #TabsToolbar .tab-background {
+    border-radius: 8px !important;
+    box-shadow: none !important;
+  }
+}

@@ -1,4 +1,5 @@
-"""Liquid — Spotlight (macOS 26/27: ortada büyük cam kapsül + sonuç listesi). GTK + cairo.
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — Spotlight (macOS 26/27: ortada büyük cam kapsül + sonuç listesi). GTK + cairo.
 
 Arar: hesap makinesi (3,5*2 gibi ondalık virgül dahil; güvenli ayrıştırıcı) · uygulamalar ·
 ev dizinindeki dosya/klasörler · web. ↑↓ gezinme, Enter açar, Esc kapatır; ikinci ⌘Space
@@ -102,7 +103,7 @@ class Spotlight(Gtk.Window):
     def __init__(self):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.set_name("lspot")
-        self.set_title("Liquid Spotlight")
+        self.set_title("Pear Spotlight")
         compositor.mark(self)
         self.set_decorated(False)
         self.set_skip_taskbar_hint(True)

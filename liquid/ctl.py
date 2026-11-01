@@ -1,4 +1,5 @@
-"""Liquid — komut satırı: kısayollar ve betikler bileşenleri buradan açar/kapatır.
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — komut satırı: kısayollar ve betikler bileşenleri buradan açar/kapatır.
 
   python3 -m liquid.ctl toggle spotlight|launcher|controlcenter
   python3 -m liquid.ctl start|stop            (oturum bekçisi + tüm bileşenler)
@@ -8,10 +9,10 @@
   python3 -m liquid.ctl compositor [picom|xfwm]   (gerçek cam: picom; geri: xfwm)
   python3 -m liquid.ctl widgets edit           (Widget'ları Düzenle — masaüstü sağ tık menüsü)
 """
+import argparse
 import os
 import signal
 import subprocess
-import sys
 
 from .core import daemon
 from .session import COMPONENTS
@@ -49,9 +50,22 @@ def app_action(what):
 
 
 def main():
-    cmd = sys.argv[1] if len(sys.argv) > 1 else "status"
-    if cmd == "toggle" and len(sys.argv) > 2:
-        daemon.signal_component(sys.argv[2])
+    parser = argparse.ArgumentParser(prog="pear", description="Pear desktop controls")
+    commands = parser.add_subparsers(dest="command")
+    for name in ("start", "stop", "status", "fullscreen"):
+        commands.add_parser(name)
+    toggle = commands.add_parser("toggle")
+    toggle.add_argument("component", choices=("spotlight", "launcher", "controlcenter", "widgets"))
+    app = commands.add_parser("app")
+    app.add_argument("action", choices=("quit", "hide", "hide-others", "minimize"))
+    widgets = commands.add_parser("widgets")
+    widgets.add_argument("action", choices=("edit",))
+    comp = commands.add_parser("compositor")
+    comp.add_argument("mode", nargs="?", choices=("picom", "xfwm"))
+    args = parser.parse_args()
+    cmd = args.command or "status"
+    if cmd == "toggle":
+        daemon.signal_component(args.component)
     elif cmd == "start":
         daemon.start("session")
     elif cmd == "stop":
@@ -65,13 +79,13 @@ def main():
             os.kill(pid, signal.SIGUSR2)
         else:
             subprocess.run(["wmctrl", "-r", ":ACTIVE:", "-b", "toggle,fullscreen"])
-    elif cmd == "app" and len(sys.argv) > 2:
-        app_action(sys.argv[2])
-    elif cmd == "widgets" and sys.argv[2:] == ["edit"]:
+    elif cmd == "app":
+        app_action(args.action)
+    elif cmd == "widgets":
         daemon.signal_component("widgets", signal.SIGUSR2)
     elif cmd == "compositor":
         from . import compositor
-        compositor.main(sys.argv[2:])
+        compositor.main([args.mode] if args.mode else [])
     elif cmd == "status":
         for name in ("session",) + COMPONENTS:
             pid = daemon.running(name)

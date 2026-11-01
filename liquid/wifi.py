@@ -1,4 +1,5 @@
-"""Liquid — Wi-Fi: ağ listesi, kayıtlı ağa bağlanma, şifre kartı (macOS'taki "… için şifre girin");
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — Wi-Fi: ağ listesi, kayıtlı ağa bağlanma, şifre kartı (macOS'taki "… için şifre girin");
 VPN: NetworkManager'daki WireGuard/VPN bağlantılarını açıp kapatma.
 
 Eski menü: liste menü açılırken ana iş parçacığında nmcli ile alınıyordu (çubuk donabiliyordu) ve

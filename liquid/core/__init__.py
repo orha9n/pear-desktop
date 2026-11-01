@@ -1,4 +1,5 @@
-"""Liquid çekirdeği: tasarım, duvar kâğıdı, süreç, uygulama ve metin yardımcıları."""
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear çekirdeği: tasarım, duvar kâğıdı, süreç, uygulama ve metin yardımcıları."""
 import os
 
 CONFIG = os.path.expanduser("~/.config/liquid")

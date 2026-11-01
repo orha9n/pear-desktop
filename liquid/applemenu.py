@@ -1,4 +1,5 @@
-"""Liquid — Elma menüsü, macOS onay uyarıları ve "Bu Mac Hakkında" penceresi.
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — Liquid menüsü, macOS onay uyarıları ve "Bu Bilgisayar Hakkında" penceresi.
 
 Menüler (bu süreçteki tüm Gtk.Menu'ler) MENU_CSS ile macOS 26 görünümünü alır:
 açık, yarı saydam, köşe 12, seçimde mavi kapsül.
@@ -212,7 +213,7 @@ _ACTIONS = {
 def _card_window(width):
     w = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
     w.set_name("lcard")
-    w.set_title("Liquid")
+    w.set_title("Pear")
     compositor.mark(w)
     w.set_decorated(False)
     w.set_resizable(False)
@@ -315,7 +316,7 @@ def confirm(kind, seconds=60):
     GLib.timeout_add_seconds(1, tick)
 
 
-# ----------------------------- Bu Mac Hakkında -----------------------------
+# ----------------------------- Bu Bilgisayar Hakkında -----------------------------
 def _read(p):
     try:
         with open(p) as f:

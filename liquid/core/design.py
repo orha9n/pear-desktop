@@ -1,6 +1,7 @@
-"""Liquid — tasarım sabitleri ve ortak çizim yardımcıları (macOS 26/27 "Liquid Glass").
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — tasarım sabitleri ve ortak çizim yardımcıları (macOS 26/27 "Liquid Glass").
 
-Ölçüler hedef görselden (PLAN.md §2) 1920x1080 ekrana uyarlandı.
+Ölçüler 1920x1080 referans ekranına göre tanımlanır.
 """
 import math
 
@@ -17,7 +18,8 @@ BAR_FONT_PX = 13
 DOCK_ICON = 54
 DOCK_PAD = 8                   # cam gövde iç boşluğu
 DOCK_GAP = 6                   # ikonlar arası
-DOCK_BOTTOM = 8                # ekran altı ile arası
+DOCK_BOTTOM = 12               # ekran altı ile arası
+DOCK_WINDOW_GAP = 14           # büyütülmüş pencere ile cam gövde arasındaki boşluk
 DOCK_RADIUS = 26
 DOCK_SEP_W = 15
 

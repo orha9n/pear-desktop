@@ -1,4 +1,5 @@
-"""Liquid — masaüstü sağ tık menüsüne "Widget'ları Düzenle…" (macOS Sonoma+).
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — masaüstü sağ tık menüsüne "Widget'ları Düzenle…" (macOS Sonoma+).
 
 xfdesktop'un masaüstü menüsü Thunar'ın özel eylemlerini (~/.config/Thunar/uca.xml) de gösterir; boş alana
 sağ tıklayınca dosya bilgisi masaüstü klasörünün kendisidir. Eylem yalnız o klasörün adıyla eşleşir.
@@ -7,7 +8,9 @@ Kullanıcının kendi eylemlerine dokunulmaz: bizimki unique-id ile eklenir/sili
   python3 -m liquid.desktopmenu install|remove
 """
 import os
+from pathlib import Path
 import re
+import shlex
 import subprocess
 import sys
 from xml.sax.saxutils import escape
@@ -29,7 +32,7 @@ def _desktop_name():
 
 
 def _block():
-    cmd = os.path.join(daemon.ROOT, "bin", "liquid") + " widgets edit"
+    cmd = shlex.quote(os.path.join(daemon.ROOT, "bin", "liquid")).replace("%", "%%") + " widgets edit"
     return (f"<action>\n\t<icon>preferences-desktop</icon>\n\t<name>{escape(t('edit_widgets'))}</name>\n"
             f"\t<submenu></submenu>\n\t<unique-id>{UID}</unique-id>\n\t<command>{escape(cmd)}</command>\n"
             f"\t<description>Liquid</description>\n\t<range></range>\n"
@@ -42,7 +45,7 @@ def _strip(xml):
 
 
 def install():
-    xml = open(UCA).read() if os.path.exists(UCA) else EMPTY
+    xml = Path(UCA).read_text() if os.path.exists(UCA) else EMPTY
     xml = _strip(xml).replace("</actions>", _block() + "</actions>", 1)
     os.makedirs(os.path.dirname(UCA), exist_ok=True)
     with open(UCA + ".tmp", "w") as f:
@@ -52,7 +55,7 @@ def install():
 
 def remove():
     if os.path.exists(UCA):
-        xml = open(UCA).read()
+        xml = Path(UCA).read_text()
         new = _strip(xml)
         if new != xml:
             with open(UCA + ".tmp", "w") as f:

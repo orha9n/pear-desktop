@@ -1,4 +1,5 @@
-"""Liquid — menü çubuğu glifleri (tek renk, elle çizilmiş; macOS 26 SF Symbols benzeri)."""
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — menü çubuğu glifleri (tek renk, elle çizilmiş; macOS 26 SF Symbols benzeri)."""
 import math
 import os
 
@@ -10,28 +11,7 @@ from gi.repository import Gtk  # noqa: E402
 
 from .core import design
 
-# Elma logosu (özgür çizim, 0..100 kutusunda)
-_APPLE = [
-    ("M", 67.6, 53.1), ("C", 67.5, 43.9, 75.1, 39.5, 75.5, 39.3), ("C", 71.2, 33.0, 64.6, 32.2, 62.2, 32.1),
-    ("C", 56.6, 31.5, 51.3, 35.4, 48.4, 35.4), ("C", 45.6, 35.4, 41.3, 32.2, 36.7, 32.3),
-    ("C", 30.7, 32.4, 25.1, 35.8, 22.0, 41.2), ("C", 15.7, 52.1, 20.4, 68.2, 26.5, 77.0),
-    ("C", 29.5, 81.3, 33.1, 86.1, 37.7, 85.9), ("C", 42.2, 85.7, 43.9, 83.0, 49.3, 83.0),
-    ("C", 54.7, 83.0, 56.2, 85.9, 60.9, 85.8), ("C", 65.7, 85.7, 68.7, 81.5, 71.6, 77.1),
-    ("C", 75.0, 72.2, 76.4, 67.4, 76.5, 67.1), ("C", 76.4, 67.1, 67.7, 63.8, 67.6, 53.1), ("Z",),
-    ("M", 58.7, 26.0), ("C", 61.2, 23.0, 62.9, 18.8, 62.4, 14.6), ("C", 58.8, 14.8, 54.5, 17.0, 51.9, 20.0),
-    ("C", 49.6, 22.6, 47.6, 26.9, 48.1, 31.0), ("C", 52.1, 31.3, 56.2, 29.0, 58.7, 26.0), ("Z",),
-]
-
-
-def apple_path(cr, x, y, size):
-    s = size / 100.0
-    for op in _APPLE:
-        if op[0] == "M":
-            cr.move_to(x + op[1] * s, y + op[2] * s)
-        elif op[0] == "C":
-            cr.curve_to(x + op[1] * s, y + op[2] * s, x + op[3] * s, y + op[4] * s, x + op[5] * s, y + op[6] * s)
-        else:
-            cr.close_path()
+PEAR_ICON = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "branding", "pear.png")
 
 
 def battery_state():
@@ -57,6 +37,7 @@ class Glyph(Gtk.DrawingArea):
     def __init__(self, kind, width):
         super().__init__()
         self.kind, self.state, self.light = kind, None, True
+        self._brand = cairo.ImageSurface.create_from_png(PEAR_ICON) if kind == "pear" else None
         self.set_size_request(width, design.BAR_H - 6)
         self.connect("draw", self.draw)
 
@@ -82,11 +63,15 @@ class Glyph(Gtk.DrawingArea):
             else:
                 cr.set_source_rgba(*self._fg(a))
         k = self.kind
-        if k == "apple":
-            s = 17
-            apple_path(cr, (wd - s) / 2, cy - s / 2, s)
+        if k == "pear":
+            # Kullanıcının sağladığı logonun alfa kanalı; renk menü çubuğuna uyar.
+            size = 18
+            cr.save()
+            cr.translate((wd - size) / 2, cy - size / 2)
+            cr.scale(size / self._brand.get_width(), size / self._brand.get_height())
             src()
-            cr.fill()
+            cr.mask_surface(self._brand, 0, 0)
+            cr.restore()
         elif k == "battery":
             cap, status, ac = self.state or (100, "", False)
             lvl = max(0, min(100, cap if cap is not None else 100))

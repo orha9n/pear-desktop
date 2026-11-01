@@ -1,6 +1,7 @@
-"""Liquid — macOS 26/27 menü çubuğu (tamamen saydam).
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — macOS 26/27 menü çubuğu (tamamen saydam).
 
-Sol:  Elma menüsü · KALIN uygulama adı · uygulamanın kendi menüleri (global menü).
+Sol:  Liquid menüsü · KALIN uygulama adı · uygulamanın kendi menüleri (global menü).
       Electron/Qt/Chromium → com.canonical.AppMenu.Registrar + dbusmenu
       GTK                  → _GTK_MENUBAR_OBJECT_PATH (GMenuModel)
       Masaüstü/pencere yok → Finder menüleri
@@ -31,6 +32,7 @@ from gi.repository import Gtk, Gdk, GLib, Gio, Wnck, Dbusmenu  # noqa: E402
 
 from .core import design, wallpaper, daemon, apps, screen_geometry, set_strut, restart_on_monitor_change  # noqa: E402
 from .core.i18n import t, weekday_short  # noqa: E402
+from .core.power import BatteryEstimate  # noqa: E402
 from . import applemenu, fullscreen  # noqa: E402
 from .glyphs import Glyph, battery_state  # noqa: E402
 from . import wifi  # noqa: E402
@@ -163,7 +165,7 @@ class Bar(Gtk.Window):
     def __init__(self):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.set_name("lbar")
-        self.set_title("Liquid Bar")
+        self.set_title("Pear Bar")
         self.set_decorated(False)
         self.set_type_hint(Gdk.WindowTypeHint.DOCK)
         self.set_skip_taskbar_hint(True)
@@ -204,13 +206,13 @@ class Bar(Gtk.Window):
         self.right.set_valign(Gtk.Align.CENTER)
         box.pack_end(self.right, False, False, 0)
 
-        # Elma menüsü (aynı süreçte → anında; diğer menülere kayarak geçilir)
-        self.apple = Gtk.MenuItem()
-        self.apple.get_style_context().add_class("apple")
-        self.apple_glyph = Glyph("apple", 16)
-        self.apple.add(self.apple_glyph)
-        self.menubar.append(self.apple)
-        self.apple.set_submenu(applemenu.build())
+        # Liquid menüsü (aynı süreçte → anında; diğer menülere kayarak geçilir)
+        self.brand = Gtk.MenuItem()
+        self.brand.get_style_context().add_class("brand")
+        self.brand_glyph = Glyph("pear", 18)
+        self.brand.add(self.brand_glyph)
+        self.menubar.append(self.brand)
+        self.brand.set_submenu(applemenu.build())
         self.appitem = Gtk.MenuItem(label="Finder")
         self.appitem.get_style_context().add_class("appname")
         self.menubar.append(self.appitem)
@@ -271,12 +273,12 @@ class Bar(Gtk.Window):
 #lbar menubar > menuitem > label, #lbar menubar > menuitem > box > label {{ font-size: {design.BAR_FONT_PX}px; font-weight: 500; color: {fg};
     text-shadow: {shadow}; padding-top: 2px; }}
 #lbar menubar > menuitem.appname > label {{ font-weight: 700; }}
-#lbar menubar > menuitem.apple {{ padding: 0 12px 0 10px; }}
+#lbar menubar > menuitem.brand {{ padding: 0 12px 0 10px; }}
 #lbar menubar > menuitem:hover {{ background-color: {hov}; }}
 #lbar button {{ background: none; border: none; box-shadow: none; padding: 0 7px; margin: 3px 0;
     min-height: {H - 6}px; min-width: 0; border-radius: 6px; }}
 #lbar button:hover, #lbar button:checked {{ background-color: {hov}; }}
-#lbar button > label {{ font-size: {design.BAR_FONT_PX}px; font-weight: 500; color: {fg}; text-shadow: {shadow};
+#lbar button > label, #lbar .battery-percentage {{ font-size: {design.BAR_FONT_PX}px; font-weight: 500; color: {fg}; text-shadow: {shadow};
     padding-top: 2px; }}   /* Inter'in inişi büyük harfleri 1 px yukarı itiyor; simgelerle aynı merkez */
 #lbar .tray {{ border-radius: 6px; min-height: {H - 6}px; }}
 #lbar .tray:hover {{ background-color: {hov}; }}
@@ -285,9 +287,9 @@ class Bar(Gtk.Window):
         for g in getattr(self, "glyphs", []):
             g.light = self.light_text
             g.queue_draw()
-        if hasattr(self, "apple_glyph"):
-            self.apple_glyph.light = self.light_text
-            self.apple_glyph.queue_draw()
+        if hasattr(self, "brand_glyph"):
+            self.brand_glyph.light = self.light_text
+            self.brand_glyph.queue_draw()
         if hasattr(self, "tray"):
             self.tray.set_light(self.light_text)
 
@@ -333,7 +335,7 @@ class Bar(Gtk.Window):
         return True
 
     def _menu_up(self):
-        """Çubuktan açılmış bir menü (uygulama, Elma, pil/Wi-Fi) hâlâ açık mı?"""
+        """Çubuktan açılmış bir menü (uygulama, Liquid, pil/Wi-Fi) hâlâ açık mı?"""
         return self._open or self.menubar.get_selected_item() is not None or self._popup_open
 
     def _green(self, xid, max_now, green):
@@ -416,7 +418,23 @@ class Bar(Gtk.Window):
         self.tray.set_valign(Gtk.Align.CENTER)
         self.right.pack_start(self.tray, False, False, 0)
         if battery_state()[0] is not None:
-            self.g_batt = self._glyph_button("battery", 30, self._battery_menu)
+            self.battery_estimate = BatteryEstimate()
+            self.g_batt = Glyph("battery", 30)
+            self.g_batt.light = self.light_text
+            self.glyphs.append(self.g_batt)
+            self.battery_percent = Gtk.Label()
+            self.battery_percent.get_style_context().add_class("battery-percentage")
+            self.battery_percent.set_width_chars(4)
+            self.battery_percent.set_xalign(0)
+            group = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+            group.pack_start(self.g_batt, False, False, 0)
+            group.pack_start(self.battery_percent, False, False, 0)
+            button = Gtk.Button()
+            button.set_relief(Gtk.ReliefStyle.NONE)
+            button.set_can_focus(False)
+            button.add(group)
+            button.connect("clicked", self._battery_menu)
+            self.right.pack_start(button, False, False, 0)
         else:
             self.g_batt = None
         self.g_wifi = self._glyph_button("wifi", 20, self._wifi_menu)
@@ -453,8 +471,10 @@ class Bar(Gtk.Window):
     def _battery_menu(self, btn):
         cap, status, ac = battery_state()
         m = Gtk.Menu()
-        m.append(item(f"{t('battery')}      %{cap}", sensitive=False, bold=True))
+        percent = t("battery_percentage").format(cap) if cap is not None else "—"
+        m.append(item(f"{t('battery')}      {percent}", sensitive=False, bold=True))
         m.append(item(f"{t('power_source')}: {t('power_adapter') if ac else t('battery')}", sensitive=False))
+        m.append(item(self.battery_estimate.text(), sensitive=False))
         m.append(sep())
         m.append(item(t("battery_settings"), lambda: sh_bg(["xfce4-power-manager-settings"])))
         self._popup(m, btn)
@@ -504,6 +524,8 @@ class Bar(Gtk.Window):
         self._update_text_color()
         if self.g_batt:
             self.g_batt.state = battery_state()
+            cap = self.g_batt.state[0]
+            self.battery_percent.set_text(t("battery_percentage").format(cap) if cap is not None else "—")
             self.g_batt.queue_draw()
 
         def wifi_bg():
@@ -557,7 +579,7 @@ class Bar(Gtk.Window):
 
     def _menus_closed(self, *_):
         self._open = False
-        self.apple.set_submenu(applemenu.build())     # Son Kullanılanlar güncel kalsın
+        self.brand.set_submenu(applemenu.build())     # Son Kullanılanlar güncel kalsın
         if self._dirty:
             self._dirty = False
             self._rebuild()
@@ -792,7 +814,7 @@ class Bar(Gtk.Window):
                          (t("go_apps"), lambda: daemon.signal_component("launcher"), "⇧⌘A"), None,
                          (t("trash"), lambda: sh_bg(["thunar", "trash:///"]), None)]),
             (t("m_window"), [(t("minimize_all"), self._minimize_all, "⌥⌘M")]),
-            (t("m_help"), [("Liquid", lambda: sh_bg(["xdg-open", os.path.join(daemon.ROOT, "README.md")]), None)]),
+            (t("m_help"), [("Pear", lambda: sh_bg(["xdg-open", os.path.join(daemon.ROOT, "README.md")]), None)]),
         ]
         for title, entries in menus:
             mi = Gtk.MenuItem(label=title)

@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Pear Setup
+Name[tr]=Pear Kurulumu
+Comment=Apply the Pear desktop to your Xfce X11 session
+Comment[tr]=Pear masaüstünü XFCE X11 oturumuna uygula
+Exec=pear-setup
+TryExec=pear-setup
+Icon=pear-desktop
+Terminal=true
+Categories=Settings;DesktopSettings;
+OnlyShowIn=XFCE;
+StartupNotify=false

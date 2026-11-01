@@ -1,4 +1,5 @@
-"""Liquid — sistem tepsisi (macOS'ta menü çubuğunun sağındaki "menu bar extras").
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — sistem tepsisi (macOS'ta menü çubuğunun sağındaki "menu bar extras").
 
 XFCE paneli kapatıldığı için tepsi ikonu kullanan uygulamaların (Güncelleme Yöneticisi, Blueman, Claude,
 Telegram…) ikonları hiçbir yerde görünmüyordu. Burada libxapp'ın XApp.StatusIconMonitor'ü
@@ -11,6 +12,7 @@ Eski XEmbed (_NET_SYSTEM_TRAY) ikonları desteklenmez.
 """
 import os
 import subprocess
+from pathlib import Path
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -22,7 +24,8 @@ from gi.repository import Gtk, Gdk, GdkPixbuf, Gio, GLib, GObject, XApp  # noqa:
 ICON = 16                                   # macOS menü çubuğu simgesi
 SN_WATCHER_DESKTOP = "/etc/xdg/autostart/xapp-sn-watcher.desktop"
 # çubuğun kendi simgeleri zaten gösterdiği için tepside tekrar edilmeyenler (macOS'ta tek Wi-Fi simgesi var)
-SKIP = {"nm-applet", "xfce4-power-manager"}
+SKIP = {"nm-applet", "xfce4-power-manager", "blueman", "blueman-tray", "blueman-applet"}
+CHATGPT_ICON = Path(__file__).resolve().parent.parent / "assets/tray/chatgpt-symbolic.svg"
 
 
 def start_sn_watcher():
@@ -54,6 +57,7 @@ def template(pb, light):
     w, h, rs = pb.get_width(), pb.get_height(), pb.get_rowstride()
     px = pb.get_pixels()
     out = bytearray(rs * h)
+    tones = []
     v = 255 if light else 0
     for y in range(h):
         for x in range(w):
@@ -61,7 +65,13 @@ def template(pb, light):
             r, g, b, a = px[i:i + 4]
             if a > 40 and max(r, g, b) - min(r, g, b) > 40:
                 return pb
+            if a > 200:
+                tones.append((r + g + b) // 3)
             out[i:i + 4] = (v, v, v, a)
+    # Opak zemin üstüne çizilmiş gri logonun iç ayrıntıları alfada bulunmaz.
+    # Böyle ikonları yalnız alfadan boyamak logoyu düz kareye çeviriyordu.
+    if tones and max(tones) - min(tones) > 80:
+        return pb
     return GdkPixbuf.Pixbuf.new_from_bytes(GLib.Bytes.new(bytes(out)), GdkPixbuf.Colorspace.RGB,
                                            True, 8, w, h, rs)
 
@@ -83,6 +93,7 @@ class TrayIcon(Gtk.EventBox):
         proxy.bind_property("tooltip-text", self, "tooltip-markup", flags)
         proxy.bind_property("visible", self, "visible", flags)
         proxy.connect("notify::icon-name", lambda *_: self._icon())
+        proxy.connect("notify::tooltip-text", lambda *_: self._icon())
         self.connect("button-press-event", self._press)
         self.connect("button-release-event", self._release)
         self.connect("scroll-event", self._scroll)
@@ -93,6 +104,11 @@ class TrayIcon(Gtk.EventBox):
 
     def _icon(self):
         s = self.proxy.props.icon_name or ""
+        # SNI köprüsünde uygulama adı ':1.331' gibi geçici bir bus adı olabilir.
+        # Uygulamanın tooltip kimliğiyle eşleştir; menü ve tıklamalar aynı proxy'de kalır.
+        label = (self.proxy.props.tooltip_text or "").strip().casefold()
+        if label == "chatgpt" or "chatgpt" in self.name():
+            s = str(CHATGPT_ICON)
         self.image.set_pixel_size(ICON)
         sc = self.get_scale_factor()
         try:
@@ -155,7 +171,7 @@ class Tray(Gtk.Box):
 
     def _added(self, mon, proxy):
         key = self._key(proxy)
-        if key in self.icons or (proxy.props.name or "").replace("org.x.StatusIcon.", "") in SKIP:
+        if key in self.icons or (proxy.props.name or "").replace("org.x.StatusIcon.", "").casefold() in SKIP:
             return
         ic = self.icons[key] = TrayIcon(proxy, self.light)
         self.pack_start(ic, False, False, 0)
@@ -175,5 +191,9 @@ class Tray(Gtk.Box):
             ic.destroy()
 
     def _sort(self):
-        for i, ic in enumerate(sorted(self.icons.values(), key=lambda c: c.name())):
+        # Tepsinin hemen ardından pil gelir; güncelleme yöneticisi ona komşu olsun.
+        def order(ic):
+            name = ic.name()
+            return (name in {"mintupdate", "mintupdate.py"}, name)
+        for i, ic in enumerate(sorted(self.icons.values(), key=order)):
             self.reorder_child(ic, i)

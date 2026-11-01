@@ -1,4 +1,5 @@
-"""Liquid — uygulamalar: .desktop listesi, pencere → uygulama eşleme, macOS adları.
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — uygulamalar: .desktop listesi, pencere → uygulama eşleme, macOS adları.
 
 Eşleme sırası: GIO_LAUNCHED_DESKTOP_FILE (yalnızca _PID tutarsa; değişken alt süreçlere miras
 kalır) → WM_CLASS örnek/grup → StartupWMClass → çalıştırılabilir dosya adı.
@@ -16,7 +17,7 @@ MAC_NAMES = {
     "firefox.desktop": "Firefox",
     "thunderbird.desktop": "Mail",
     "org.gnome.Rhythmbox3.desktop": t("app_music"),
-    "mintinstall.desktop": "App Store",
+    "mintinstall.desktop": t("a_appstore"),
     "xfce-settings-manager.desktop": t("app_settings"),
     "xfce4-terminal.desktop": "Terminal",
     "org.gnome.Calendar.desktop": t("app_calendar"),

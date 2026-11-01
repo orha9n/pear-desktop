@@ -1,0 +1,8 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-only
+set -e
+if [ "$1" = remove ] || [ "$1" = deconfigure ]; then
+    echo "Pear: run pear-reset as your desktop user before removing the package."
+    echo "Pear: package removal does not restore per-user desktop settings."
+fi
+exit 0

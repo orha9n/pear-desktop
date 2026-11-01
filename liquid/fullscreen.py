@@ -1,4 +1,5 @@
-"""Liquid — macOS tam ekranı: yeşil düğme, menü çubuğunun altına yerleşen pencere, başlık şeridi.
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — macOS tam ekranı: yeşil düğme, menü çubuğunun altına yerleşen pencere, başlık şeridi.
 
 macOS'ta yeşil düğme pencereyi tam ekrana alır ama pencere menü çubuğunun ÜSTÜNE çıkmaz: menü
 çubuğunun şeridi düz açık/koyu renge döner, pencere onun altından ekranın en altına (dock'un alanı
@@ -15,7 +16,7 @@ Uygulamanın kendi tam ekranı (video, F11 → _NET_WM_STATE_FULLSCREEN) ayrıd�
 pencerelerin ALTINDA bıraktığından çubuk ve dock saydam/tıklanamaz yapılır, başlık şeridi en üstte açılır.
 
 Durum $XDG_RUNTIME_DIR/liquid/fullscreen.json'da (bar yeniden başlarsa ve dock okusun diye).
-Wnck.Window nesneleri SAKLANMAZ (PLAN.md §5c) — yalnızca XID.
+Wnck.Window nesneleri SAKLANMAZ — yalnızca XID.
 """
 import json
 import os

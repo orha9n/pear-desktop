@@ -1,4 +1,5 @@
-"""Liquid — gerçek cam için compositor seçimi: xfwm4'ün kendi compositor'ü ya da picom.
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — gerçek cam için compositor seçimi: xfwm4'ün kendi compositor'ü ya da picom.
 
 xfwm4 compositor'ü arkadaki pencereleri bulanıklaştıramaz; bu yüzden cam yüzeyler duvar kâğıdının
 bulanık bir kopyasını çiziyordu (arkada pencere olsa da duvar kâğıdı görünürdü). picom açıkken
@@ -91,6 +92,7 @@ def restore_system_autostart():
 
 
 def start_picom():
+    os.makedirs(os.path.expanduser("~/.cache/liquid"), exist_ok=True)
     log = open(os.path.expanduser("~/.cache/liquid/picom.log"), "a")
     try:
         # setsid -f: başlatan süreçten (oturum bekçisi) kopar → kapanınca zombi kalmaz

@@ -1,6 +1,7 @@
-"""Liquid — süreç yönetimi: tek kopya (PID), aç/kapat sinyali, başka bileşeni başlatma.
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — süreç yönetimi: tek kopya (PID), aç/kapat sinyali, başka bileşeni başlatma.
 
-PLAN.md §5 tuzakları burada çözülür:
+Süreç yönetiminde dikkat edilenler:
   - bayat PID dosyası başka bir süreci gösterebilir → /proc/PID/cmdline doğrulaması
   - SIGUSR1 üst süreçten ENGELLİ miras kalabilir → her daemon başında engeli kaldır
 """

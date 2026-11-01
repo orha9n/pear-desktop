@@ -1,4 +1,5 @@
-"""Liquid — masaüstü widget'ları (macOS 26/27): Takvim, Analog Saat, Fotoğraf.
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — masaüstü widget'ları (macOS 26/27): Takvim, Analog Saat, Fotoğraf.
 
 Hedef görseldeki düzen (sol üst): [Takvim][Saat] üstte, [Fotoğraf (orta boy)] altta.
 Her widget ayrı, masaüstü katmanında (diğer pencerelerin altında) duran bir penceredir;
@@ -79,7 +80,7 @@ class Widget(Gtk.Window):
 
     def __init__(self, w, h, default_xy):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
-        self.set_title(f"Liquid Widget {self.kind}")
+        self.set_title(f"Pear Widget {self.kind}")
         self.set_decorated(False)
         self.set_skip_taskbar_hint(True)
         self.set_skip_pager_hint(True)
@@ -186,7 +187,7 @@ class CalendarWidget(Widget):
         GLib.timeout_add_seconds(60, lambda: (self.queue_draw(), True)[1])
 
     def paint(self, cr):
-        W = self.W                                  # oranlar hedef görselden (PLAN.md, 24.10)
+        W = self.W                                  # widget çizim oranları
         design.soft_shadow(cr, 0, 0, W, self.H, R, strength=0.06, spread=8, dy=2)
         design.rrect(cr, 0, 0, W, self.H, R)
         cr.set_source_rgba(*design.paper(1))
@@ -347,7 +348,7 @@ BADGE_R = 10                                      # düzenleme modundaki "−" r
 
 
 def _card(win, keep_above=True):
-    """Liquid cam kart penceresi (DIALOG, kenarsız, saydam köşeli)."""
+    """Pear cam kart penceresi (DIALOG, kenarsız, saydam köşeli)."""
     from .applemenu import install_css, _card_bg
     from . import compositor
     win.set_name("lcard")
@@ -383,7 +384,7 @@ class Gallery(Gtk.Window):
         Gallery.instance = self
         self.classes, self.live = classes, live           # kind -> sınıf, kind -> açık pencere
         self.previews = {}                                 # açık olmayan türler için gizli örnek (önizleme)
-        self.set_title("Liquid Widgets")
+        self.set_title("Pear Widgets")
         _card(self)
         self.connect("key-press-event", lambda w, e: (e.keyval == Gdk.KEY_Escape and self.done(), False)[1])
         self.connect("hide", lambda *_: self._editing(False))
@@ -528,7 +529,7 @@ class NotificationCenter(Gtk.Window):
     def __init__(self, gallery):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.gallery = gallery
-        self.set_title("Liquid Notification Center")
+        self.set_title("Pear Notification Center")
         _card(self)
         self.connect("focus-out-event", lambda *_: (time.monotonic() - self._shown > 0.5 and self.hide(), False)[1])
         self.connect("key-press-event", lambda w, e: (e.keyval == Gdk.KEY_Escape and self.hide(), False)[1])

@@ -1,4 +1,5 @@
-"""Liquid — "Uygulamalar" ekranı (macOS 26'da Launchpad'in yerini alan tam ekran ızgara).
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — "Uygulamalar" ekranı (macOS 26'da Launchpad'in yerini alan tam ekran ızgara).
 
   - Arka plan: duvar kâğıdının tamamı bulanık + hafif karartılmış
   - Üstte cam kapsül arama; yazdıkça süzer, Enter ilk sonucu açar
@@ -44,7 +45,7 @@ class Launcher(Gtk.Window):
     def __init__(self):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.set_name("lapps")
-        self.set_title("Liquid Apps")
+        self.set_title("Pear Apps")
         compositor.mark(self)
         self.set_decorated(False)
         self.set_skip_taskbar_hint(True)

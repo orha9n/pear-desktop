@@ -1,0 +1,42 @@
+Pear desktop test package
+===========================
+
+Target: Debian/Ubuntu-based systems with an Xfce X11 desktop. Linux Mint Xfce
+is the primary development environment. Other distributions are unverified.
+The architecture-independent package contains Python source and image assets.
+
+Install with apt so dependencies are resolved:
+
+    sudo apt install ./pear-desktop_0.1.0~alpha1_all.deb
+
+Log into Xfce using X11, then run as your regular desktop user:
+
+    pear-setup
+
+Alternatively, open "Pear Setup" from the applications menu. Initial setup
+requires internet to fetch pinned external themes, and may request sudo for
+the system GTK theme and wallpaper. Log out and in after setup for global menus.
+Installing the package itself does not change any user's desktop or start Pear.
+
+Check operation with:
+
+    pear status
+
+Restore your original desktop before uninstalling, inside the graphical session:
+
+    pear-reset
+    sudo apt remove pear-desktop
+
+Do not run pear-setup or pear-reset with sudo. Package removal does not
+automatically restore home-directory settings. Recovery state stays in
+~/.local/share/liquid/backups and ~/.config/liquid.
+
+Test on a disposable VM first. This alpha package has automated packaging and
+regression checks; a clean-machine graphical install is still required.
+
+Building:
+
+    python3 tools/build_deb.py
+
+Set --maintainer 'Your Name <your-public-email>' for a public release. The local
+test build uses an explicit example.invalid address, not a support contact.

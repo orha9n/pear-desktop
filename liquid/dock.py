@@ -1,4 +1,5 @@
-"""Liquid — macOS 26/27 Dock (Liquid Glass).
+# SPDX-License-Identifier: GPL-3.0-only
+"""Pear — macOS 26/27 Dock (Liquid Glass).
 
   - Sıvı cam gövde: arkadaki duvar kâğıdı bulanık + doygun, üstte parlak iç kenar, yumuşak gölge
   - Finder · Uygulamalar · sabitli uygulamalar · çalışan (sabitlenmemiş) uygulamalar ·
@@ -92,7 +93,7 @@ class DockGlass(Gtk.Window):
     def __init__(self, dock):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.dock = dock
-        self.set_title("Liquid Dock Glass")
+        self.set_title("Pear Dock Glass")
         compositor.mark(self)
         self.set_decorated(False)
         self.set_type_hint(Gdk.WindowTypeHint.DOCK)
@@ -107,13 +108,17 @@ class DockGlass(Gtk.Window):
             self.set_visual(vis)
         self.connect("draw", self._clear)
         self.connect("map-event", self._mapped)
-        self.set_size_request(dock.mw, dock.BG_H)
-        self.move(dock.mx, dock.my + dock.mh - design.DOCK_BOTTOM - dock.BG_H)      # dock camıyla aynı satır
+        # Bulanıklık penceresi ekran genişliğinde olmasın. Ayrı pencere boyutu ve
+        # X şekli birlikte camı izler; eski şekil genişliği dışarıda yama bırakamaz.
+        dock._layout()
+        self.sync(dock.bg_x, dock.bg_w, design.DOCK_RADIUS, False)
 
     def _mapped(self, *_):
         self.get_window().input_shape_combine_region(cairo.Region(), 0, 0)    # tıklamalar hep dock'a
+        self._shape_key = None
         self.restack()
-        self.dock._sync_glass()
+        self.dock._layout()
+        self.sync(self.dock.bg_x, self.dock.bg_w, design.DOCK_RADIUS, self.dock.fs_hidden)
         return False
 
     @staticmethod
@@ -130,13 +135,22 @@ class DockGlass(Gtk.Window):
             gw.restack(dw, False)
 
     def sync(self, x, w, r, hidden):
+        # Yuvarlamayı iki uçta yap: kesirli yerleşimde de gövdeyle aynı piksel sınırı.
+        left, right = round(x), round(x + w)
+        width = max(1, right - left)
+        key = (left, width, self.dock.BG_H, int(r))
+        if getattr(self, "_key", None) != key:
+            self._key = key
+            self.set_size_request(width, self.dock.BG_H)
+            self.resize(width, self.dock.BG_H)
+            self.move(self.dock.mx + left,
+                      self.dock.my + self.dock.mh - design.DOCK_BOTTOM - self.dock.BG_H)
         gw = self.get_window()
         if gw is None:
             return
-        key = (int(round(x)), int(round(w)), int(r))
-        if getattr(self, "_key", None) != key:
-            self._key = key
-            gw.shape_combine_region(compositor._rounded_region(key[0], 0, key[1], self.dock.BG_H, key[2]), 0, 0)
+        if getattr(self, "_shape_key", None) != key:
+            self._shape_key = key
+            gw.shape_combine_region(compositor._rounded_region(0, 0, width, self.dock.BG_H, int(r)), 0, 0)
         if getattr(self, "_hidden", None) != hidden:
             # tam ekranda dock gizliyken: picom saydamlığı 0 olan pencerenin arkasını da bulanıklaştırıyor
             # (ekranın altında bulanık şerit kalıyordu) → haritadan kaldır; strut'ı yok, çalışma alanı değişmez
@@ -159,7 +173,7 @@ class Dock(Gtk.Window):
             save_items(keys)
         self.keys = keys
 
-        self.set_title("Liquid Dock")
+        self.set_title("Pear Dock")
         self.set_decorated(False)
         self.set_type_hint(Gdk.WindowTypeHint.DOCK)
         self.set_skip_taskbar_hint(True)
@@ -224,7 +238,7 @@ class Dock(Gtk.Window):
         win = self.get_window()
         if win:
             sf = self.get_scale_factor()
-            set_strut(win, bottom=(self.BG_H + design.DOCK_BOTTOM) * sf,
+            set_strut(win, bottom=(self.BG_H + design.DOCK_BOTTOM + design.DOCK_WINDOW_GAP) * sf,
                       x0=self.mx * sf, x1=(self.mx + self.mw) * sf - 1)
             self._input()
         return False
