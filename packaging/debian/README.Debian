@@ -5,8 +5,16 @@ Target: Debian/Ubuntu-based systems with an Xfce X11 desktop. Linux Mint Xfce
 is the primary development environment. Other distributions are unverified.
 The architecture-independent package contains Python source and image assets.
 
+Download the .deb attachment from a published release:
+
+    https://github.com/orha9n/pear-desktop/releases
+
+Open a terminal in the folder containing the downloaded .deb. Check its filename
+with ls. A GitHub source ZIP or tarball is not an installable package.
+
 Install with apt so dependencies are resolved:
 
+    sudo apt update
     sudo apt install ./pear-desktop_0.1.0~alpha1_all.deb
 
 Log into Xfce using X11, then run as your regular desktop user:
@@ -34,7 +42,7 @@ automatically restore home-directory settings. Recovery state stays in
 Test on a disposable VM first. This alpha package has automated packaging and
 regression checks; a clean-machine graphical install is still required.
 
-Building:
+Building from a source checkout (not from the installed application directory):
 
     python3 tools/build_deb.py
 
