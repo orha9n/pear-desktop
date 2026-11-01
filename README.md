@@ -6,6 +6,10 @@ A macOS-inspired desktop interface for **Linux Mint Xfce on X11**, written in
 Python 3, GTK 3 and cairo. Pear adds a menu bar, glass dock, desktop widgets,
 application launcher, search and Control Center to your existing Xfce desktop.
 
+![Pear desktop on Linux Mint Xfce, showing the pear menu icon, transparent menu bar and glass dock](.github/images/pear-desktop.png)
+
+*Pear running on Linux Mint Xfce with its menu bar and glass dock. Click the image to view it at full size.*
+
 **Alpha software.** Pear is a desktop customization application, not a Linux
 operating system or a replacement window manager. Clean-machine graphical testing
 is still required. [Türkçe kurulum ve kullanım kılavuzu](docs/README.tr.md).

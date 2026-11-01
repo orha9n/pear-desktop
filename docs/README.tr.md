@@ -5,6 +5,10 @@ masaüstü arayüzüdür. Menü çubuğu, cam dock, widget'lar, uygulama ekranı
 Bildirim Merkezi ve Control Center ekler. Python 3, GTK 3 ve cairo ile yazılmıştır.
 Bir işletim sistemi veya pencere yöneticisi değildir.
 
+![Linux Mint Xfce üzerinde Pear: armut menü simgesi, saydam menü çubuğu ve cam dock](../.github/images/pear-desktop.png)
+
+*Linux Mint Xfce üzerinde çalışan Pear'in menü çubuğu ve cam dock'u. Görseli tam boyutta açmak için üzerine tıklayabilirsin.*
+
 **Durum: alfa/test sürümü.** Temiz sistemde grafik kurulum testleri hâlâ gereklidir.
 [English README](../README.md).
 
