@@ -87,6 +87,9 @@ clone() {
 }
 if [ ! -d /usr/share/themes/MacTahoe-Light/xfwm4 ] && [ ! -d "$HOME/.themes/MacTahoe-Light/xfwm4" ]; then
   clone MacTahoe-gtk-theme && (cd "$TMP/MacTahoe-gtk-theme" && sudo ./install.sh -c light -c dark -o normal)
+  # MacTahoe kurucusu root olarak src/sass/*-temp.scss oluşturur; aşağıdaki GTK4 adımı aynı klasörü
+  # kullanıcıyla kullandığı için sahipliği geri ver (yoksa cp "Permission denied" ile kurulum durur).
+  sudo chown -R "$(id -u):$(id -g)" "$TMP/MacTahoe-gtk-theme"
 fi
 if [ ! -d "$HOME/.local/share/icons/MacTahoe" ] && [ ! -d /usr/share/icons/MacTahoe ]; then
   clone MacTahoe-icon-theme && (cd "$TMP/MacTahoe-icon-theme" && ./install.sh -d "$HOME/.local/share/icons")
