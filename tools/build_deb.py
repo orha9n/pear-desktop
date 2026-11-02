@@ -83,7 +83,8 @@ def build(output, version=DEFAULT_VERSION, maintainer="Pear contributors <pear@e
         for path in stage.rglob("*"):
             path.chmod(0o755 if path.is_dir() or path in executables else 0o644)
         stage.chmod(0o755)
-        dest = output / f"pear-desktop_{version}_all.deb"
+        # GitHub release assets turn "~" into "."; name the file the way it will be downloaded.
+        dest = output / f"pear-desktop_{version.replace('~', '.')}_all.deb"
         subprocess.run(["dpkg-deb", "--root-owner-group", "-Zxz", "--build", str(stage), str(dest)], check=True)
         (output / (dest.name + ".sha256")).write_text(hashlib.sha256(dest.read_bytes()).hexdigest() + "  " + dest.name + "\n")
         return dest

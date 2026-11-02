@@ -25,6 +25,11 @@ class DebianPackageTests(unittest.TestCase):
         subprocess.run(["dpkg-deb", "--raw-extract", str(cls.deb), str(cls.directory / "extracted")], check=True)
         cls.extracted = cls.directory / "extracted"
 
+    def test_filename_matches_github_release_asset(self):
+        self.assertEqual(self.deb.name, "pear-desktop_0.1.0.alpha1_all.deb")
+        version = subprocess.check_output(["dpkg-deb", "--field", str(self.deb), "Version"], text=True).strip()
+        self.assertEqual(version, "0.1.0~alpha1")
+
     def test_dependency_metadata_covers_every_installer_package(self):
         dependencies = subprocess.check_output(["dpkg-deb", "--field", str(self.deb), "Depends"], text=True)
         names = {item.strip().split()[0] for item in dependencies.split(',')}
