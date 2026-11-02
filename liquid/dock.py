@@ -197,6 +197,7 @@ class Dock(Gtk.Window):
         self.mx, self.my, self.mw, self.mh = screen_geometry()
         self.M = round(self.S * max(1.0, self.MAG))
         self.BG_H = self.S + 2 * design.DOCK_PAD
+        self.RESERVED = self.BG_H + design.DOCK_BOTTOM + design.DOCK_WINDOW_GAP    # strut: hep duvar kâğıdı
         self.WIN_H = 40 + (self.M - self.S) + self.BG_H + design.DOCK_BOTTOM + 10
         self.set_size_request(self.mw, self.WIN_H)
         self.move(self.mx, self.my + self.mh - self.WIN_H)
@@ -238,7 +239,7 @@ class Dock(Gtk.Window):
         win = self.get_window()
         if win:
             sf = self.get_scale_factor()
-            set_strut(win, bottom=(self.BG_H + design.DOCK_BOTTOM + design.DOCK_WINDOW_GAP) * sf,
+            set_strut(win, bottom=self.RESERVED * sf,
                       x0=self.mx * sf, x1=(self.mx + self.mw) * sf - 1)
             self._input()
         return False
@@ -427,7 +428,10 @@ class Dock(Gtk.Window):
         top = self.bg_y - (self.M - self.S) - (2 if grow else 0)
         pad = 60 if grow else 0
         r = cairo.RectangleInt(int(self.bg_x) - pad, int(top), int(self.bg_w) + 2 * pad, int(self.WIN_H - top))
-        self.input_shape_combine_region(cairo.Region(r))
+        region = cairo.Region(r)
+        # dock'un yanındaki ayrılmış şerit de bizim: oraya tıklamak masaüstünü gösterir (macOS)
+        region.union(cairo.RectangleInt(0, self.WIN_H - self.RESERVED, self.mw, self.RESERVED))
+        self.input_shape_combine_region(region)
 
     # ---------- arka plan ----------
     def _real_glass(self):
@@ -607,6 +611,8 @@ class Dock(Gtk.Window):
     def on_motion(self, w, e):
         inside = self.bg_x - 10 <= e.x <= self.bg_x + self.bg_w + 10 and e.y >= self.bg_y - (self.M - self.S) - 6
         if not inside and self.press is None:
+            if self.mouse_x is None and self.hover_item is None:
+                return False                              # yan şeritte gezinmek yeniden çizdirmesin
             return self.on_leave(w, e)
         if self.mouse_x is None:
             self.mouse_x = e.x
@@ -646,6 +652,10 @@ class Dock(Gtk.Window):
 
     def on_press(self, w, e):
         it = self._item_at(e.x, e.y)
+        if it is None and e.button == 1 and not self.bg_x <= e.x <= self.bg_x + self.bg_w \
+                and e.y >= self.WIN_H - self.RESERVED:
+            self.wnck.toggle_showing_desktop(not self.wnck.get_showing_desktop())
+            return True
         if it is None or it.kind == "sep":
             return False
         if e.button == 3:

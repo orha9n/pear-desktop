@@ -19,7 +19,7 @@ DOCK_ICON = 54
 DOCK_PAD = 8                   # cam gövde iç boşluğu
 DOCK_GAP = 6                   # ikonlar arası
 DOCK_BOTTOM = 12               # ekran altı ile arası
-DOCK_WINDOW_GAP = 14           # büyütülmüş pencere ile cam gövde arasındaki boşluk
+DOCK_WINDOW_GAP = DOCK_BOTTOM  # büyütülmüş pencere ile cam gövde arası; altla eşit (macOS)
 DOCK_RADIUS = 26
 DOCK_SEP_W = 15
 
