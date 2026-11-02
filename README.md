@@ -82,7 +82,7 @@ Open [GitHub Releases](https://github.com/orha9n/pear-desktop/releases). Open th
 `v0.1.0-alpha1` pre-release, expand **Assets**, and download:
 
 ```text
-pear-desktop_0.1.0~alpha1_all.deb
+pear-desktop_0.1.0.alpha1_all.deb
 ```
 
 The file must end in **`.deb`**. GitHub's automatic **Source code (zip)** and
@@ -99,7 +99,7 @@ In your file manager, open the folder where you saved the `.deb`, then choose
 **Open Terminal Here**. In that terminal, verify the file is present:
 
 ```bash
-ls -lh ./pear-desktop_0.1.0~alpha1_all.deb
+ls -lh ./pear-desktop_0.1.0.alpha1_all.deb
 ```
 
 If the command says the file does not exist, open the correct folder before
@@ -110,7 +110,7 @@ actual filename when installing a later release.
 
 ```bash
 sudo apt update
-sudo apt install ./pear-desktop_0.1.0~alpha1_all.deb
+sudo apt install ./pear-desktop_0.1.0.alpha1_all.deb
 ```
 
 Enter your **Linux user password** if sudo asks. The `./` tells apt that this is a
@@ -329,7 +329,7 @@ installs. Do not run either command as root.
 | --- | --- |
 | `.deb` is not visible in the repository file list | Open **Releases → release → Assets**. `dist/` is excluded from Git; a maintainer must upload the package as a release attachment. |
 | Release or package download returns 404 | The release may not be published, the attachment may be missing, or the repository may require access. Use an available asset or install from source; a source ZIP is not a `.deb`. |
-| `Unable to locate package pear-desktop` | For a downloaded package, use `sudo apt install ./pear-desktop_0.1.0~alpha1_all.deb` from its folder. There is no Pear apt repository configured by these instructions. |
+| `Unable to locate package pear-desktop` | For a downloaded package, use `sudo apt install ./pear-desktop_0.1.0.alpha1_all.deb` from its folder. There is no Pear apt repository configured by these instructions. |
 | Local `.deb` file cannot be found | Use **Open Terminal Here** in the download folder and check the exact filename with `ls`. |
 | Apt reports missing/uninstallable dependencies | Run `sudo apt update`; confirm your distribution provides the dependencies. Other Debian/Ubuntu-based systems are unverified. Do not force installation with ignored dependencies. |
 | `pear-setup: command not found` | The `.deb` install may not have completed. Check `dpkg-query -W pear-desktop`. For a source checkout, use `bash install.sh` instead. |

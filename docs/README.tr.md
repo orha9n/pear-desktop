@@ -67,7 +67,7 @@ alma komutunu çalıştır.
 `v0.1.0-alpha1` ön sürümünü seç, **Assets** bölümünü genişlet ve şu dosyayı indir:
 
 ```text
-pear-desktop_0.1.0~alpha1_all.deb
+pear-desktop_0.1.0.alpha1_all.deb
 ```
 
 Dosya uzantısı **`.deb`** olmalı. **Source code (zip)**, **Source code (tar.gz)**
@@ -85,7 +85,7 @@ Dosya yöneticisinde `.deb` dosyasını kaydettiğin klasöre git ve **Burada Te
 Aç** seçeneğini kullan. Terminalde dosyanın bulunduğunu doğrula:
 
 ```bash
-ls -lh ./pear-desktop_0.1.0~alpha1_all.deb
+ls -lh ./pear-desktop_0.1.0.alpha1_all.deb
 ```
 
 “Dosya bulunamadı” hatası varsa devam etmeden önce doğru klasöre git. Aşağıdaki
@@ -98,7 +98,7 @@ Aynı terminalde çalıştır:
 
 ```bash
 sudo apt update
-sudo apt install ./pear-desktop_0.1.0~alpha1_all.deb
+sudo apt install ./pear-desktop_0.1.0.alpha1_all.deb
 ```
 
 Sudo sorarsa **Linux kullanıcı şifreni** gir. Baştaki `./`, apt'ye yerel dosyayı
@@ -309,7 +309,7 @@ klasöründen `./bin/pear` kullan. Hiçbirini root olarak çalıştırma.
 | --- | --- |
 | GitHub dosya listesinde `.deb` yok | **Releases → sürüm → Assets** bölümüne bak. `dist/` Git'e eklenmez; paket ayrıca sürüm eki olarak yayımlanır. |
 | Sürüm veya indirme bağlantısı 404 veriyor | Sürüm yayımlanmamış, dosya yüklenmemiş veya erişim kısıtlı olabilir. Mevcut bir eki kullan veya kaynak koddan kur; kaynak ZIP dosyası `.deb` değildir. |
-| `pear-desktop paketi bulunamadı` | İndirilen dosyanın klasöründe `sudo apt install ./pear-desktop_0.1.0~alpha1_all.deb` kullan. Bu belgede Pear için bir apt deposu eklenmiyor. |
+| `pear-desktop paketi bulunamadı` | İndirilen dosyanın klasöründe `sudo apt install ./pear-desktop_0.1.0.alpha1_all.deb` kullan. Bu belgede Pear için bir apt deposu eklenmiyor. |
 | Yerel `.deb` dosyası bulunamıyor | Dosyanın klasöründe terminal aç; `ls` ile tam adını kontrol et. |
 | Apt bağımlılıkları kuramıyor | `sudo apt update` çalıştır; dağıtımının gerekli paketleri sağladığını kontrol et. Diğer Debian/Ubuntu tabanlı sistemler doğrulanmadı. Bağımlılıkları yok sayarak zorla kurma. |
 | `pear-setup: komut bulunamadı` | `.deb` kurulumu tamamlanmamış olabilir; `dpkg-query -W pear-desktop` ile kontrol et. Kaynak kurulumunda `bash install.sh` kullan. |
