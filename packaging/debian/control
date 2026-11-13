@@ -5,7 +5,7 @@ Priority: optional
 Architecture: all
 Maintainer: @MAINTAINER@
 Installed-Size: @SIZE@
-Depends: python3 (>= 3.10), python3-gi, python3-gi-cairo, python3-cairo, python3-pil, gir1.2-gtk-3.0, gir1.2-wnck-3.0, gir1.2-dbusmenu-glib-0.4, gir1.2-xapp-1.0, xapps-common, xfce4-session, xfce4-panel, xfdesktop4, xfwm4, xfconf, xfce4-settings, xfce4-power-manager, thunar, x11-utils, x11-xserver-utils, wmctrl, xdotool, playerctl, brightnessctl, pulseaudio-utils, network-manager, network-manager-gnome, fonts-inter, appmenu-gtk2-module, appmenu-gtk3-module, appmenu-registrar, sassc, libxml2-utils, git, picom, libnotify-bin, xfce4-notifyd, xfce4-screenshooter, bluez, rfkill, xdg-utils, xdg-user-dirs, sudo, util-linux, procps
+Depends: python3 (>= 3.10), python3-gi, python3-gi-cairo, python3-cairo, python3-pil, gir1.2-gtk-3.0, gir1.2-wnck-3.0, gir1.2-dbusmenu-glib-0.4, gir1.2-xapp-1.0, xapps-common, xfce4-session, xfce4-panel, xfdesktop4, xfwm4, xfconf, xfce4-settings, xfce4-power-manager, thunar, x11-utils, x11-xserver-utils, wmctrl, xdotool, playerctl, brightnessctl, pulseaudio-utils, network-manager, network-manager-gnome, fonts-inter, appmenu-gtk2-module, appmenu-gtk3-module, appmenu-registrar, sassc, picom, libnotify-bin, xfce4-notifyd, xfce4-screenshooter, bluez, rfkill, xdg-utils, xdg-user-dirs, sudo, util-linux, procps
 Description: macOS-inspired desktop interface for Xfce on X11
  Pear provides a menu bar, glass dock, widgets, application launcher,
  local search and Control Center. Includes the maintainer-provided pear logo.
