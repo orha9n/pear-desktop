@@ -331,6 +331,7 @@ installs. Do not run either command as root.
 | Release or package download returns 404 | The release may not be published, the attachment may be missing, or the repository may require access. Use an available asset or install from source; a source ZIP is not a `.deb`. |
 | `Unable to locate package pear-desktop` | For a downloaded package, use `sudo apt install ./pear-desktop_0.1.0.alpha1_all.deb` from its folder. There is no Pear apt repository configured by these instructions. |
 | Local `.deb` file cannot be found | Use **Open Terminal Here** in the download folder and check the exact filename with `ls`. |
+| `Failed to fetch ... security.ubuntu.com ... 404 Not Found` | Your local apt package index is outdated and references superseded security updates. Run `sudo apt update --fix-missing` first, then rerun `sudo apt install ./pear-desktop_0.1.0.alpha1_all.deb`. |
 | Apt reports missing/uninstallable dependencies | Run `sudo apt update`; confirm your distribution provides the dependencies. Other Debian/Ubuntu-based systems are unverified. Do not force installation with ignored dependencies. |
 | `pear-setup: command not found` | The `.deb` install may not have completed. Check `dpkg-query -W pear-desktop`. For a source checkout, use `bash install.sh` instead. |
 | Setup says Xfce or X11 is required | Check the environment command under **Before installing**; use your logged-in Xfce/X11 graphical session. |

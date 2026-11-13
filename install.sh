@@ -51,7 +51,7 @@ xfset() {   # kanal özellik tür değer [desen]
 say "1/7  Paketler"
 PKGS="python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-wnck-3.0 gir1.2-dbusmenu-glib-0.4 python3-pil
   x11-utils wmctrl xdotool playerctl brightnessctl pulseaudio-utils network-manager fonts-inter
-  appmenu-gtk2-module appmenu-gtk3-module appmenu-registrar sassc libxml2-utils git picom
+  appmenu-gtk2-module appmenu-gtk3-module appmenu-registrar sassc picom
   gir1.2-xapp-1.0 xapps-common python3-cairo x11-xserver-utils libnotify-bin
   xfce4-notifyd xfce4-screenshooter network-manager-gnome bluez rfkill xdg-utils xdg-user-dirs"
 MISSING=()
@@ -59,6 +59,7 @@ for p in $PKGS; do dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q "ok i
 if [ "${#MISSING[@]}" = 0 ]; then ok "hepsi kurulu"
 elif [ "$NO_APT" = 1 ]; then warn "eksik paketler: ${MISSING[*]}"; exit 1
 else
+  sudo apt-get update
   sudo apt-get install -y "${MISSING[@]}"
   ok "kuruldu: ${MISSING[*]}"
 fi
@@ -81,9 +82,25 @@ clone() {
     WhiteSur-cursors) revision=e190baf618ed95ee217d2fd45589bd309b37672b ;;
     *) return 1 ;;
   esac
-  git init -q "$TMP/$repo"
-  git -C "$TMP/$repo" fetch -q --depth=1 "https://github.com/vinceliuice/$repo.git" "$revision"
-  git -C "$TMP/$repo" checkout -q --detach FETCH_HEAD
+  python3 - "$repo" "$revision" "$TMP/$repo" <<'PY'
+import io, os, shutil, sys, tarfile, urllib.request
+repo, rev, dest = sys.argv[1:4]
+url = f"https://codeload.github.com/vinceliuice/{repo}/tar.gz/{rev}"
+req = urllib.request.Request(url, headers={"User-Agent": "pear-desktop-setup/0.1"})
+with urllib.request.urlopen(req, timeout=60) as resp:
+    data = resp.read()
+parent = os.path.dirname(dest)
+prefix = f"{repo}-{rev}/"
+with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tf:
+    for m in tf.getmembers():
+        if not m.name.startswith(prefix) or ".." in m.name.split("/"):
+            raise RuntimeError(f"Unexpected archive member: {m.name}")
+    try:
+        tf.extractall(parent, filter="tar")
+    except TypeError:
+        tf.extractall(parent)
+shutil.move(os.path.join(parent, f"{repo}-{rev}"), dest)
+PY
 }
 if [ ! -d /usr/share/themes/MacTahoe-Light/xfwm4 ] && [ ! -d "$HOME/.themes/MacTahoe-Light/xfwm4" ]; then
   clone MacTahoe-gtk-theme && (cd "$TMP/MacTahoe-gtk-theme" && sudo ./install.sh -c light -c dark -o normal)

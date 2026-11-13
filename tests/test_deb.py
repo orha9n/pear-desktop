@@ -36,6 +36,7 @@ class DebianPackageTests(unittest.TestCase):
         installer = (ROOT / "install.sh").read_text()
         required = set(re.search(r'PKGS="([^"]+)"', installer).group(1).split())
         self.assertFalse(required - names, required - names)
+        self.assertFalse({"git", "libxml2-utils"} & names)
         self.assertEqual(subprocess.check_output(["dpkg-deb", "--field", str(self.deb), "Architecture"], text=True).strip(), 'all')
 
     def test_payload_excludes_developer_state_and_has_root_ownership(self):

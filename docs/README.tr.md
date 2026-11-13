@@ -311,6 +311,7 @@ klasöründen `./bin/pear` kullan. Hiçbirini root olarak çalıştırma.
 | Sürüm veya indirme bağlantısı 404 veriyor | Sürüm yayımlanmamış, dosya yüklenmemiş veya erişim kısıtlı olabilir. Mevcut bir eki kullan veya kaynak koddan kur; kaynak ZIP dosyası `.deb` değildir. |
 | `pear-desktop paketi bulunamadı` | İndirilen dosyanın klasöründe `sudo apt install ./pear-desktop_0.1.0.alpha1_all.deb` kullan. Bu belgede Pear için bir apt deposu eklenmiyor. |
 | Yerel `.deb` dosyası bulunamıyor | Dosyanın klasöründe terminal aç; `ls` ile tam adını kontrol et. |
+| `Failed to fetch ... security.ubuntu.com ... 404 Not Found` | Yerel apt paket indeksin eski olduğu için sunucudan kaldırılmış güvenlik güncellemelerini indirmeye çalışıyor. Önce `sudo apt update --fix-missing`, ardından `sudo apt install ./pear-desktop_0.1.0.alpha1_all.deb` çalıştır. |
 | Apt bağımlılıkları kuramıyor | `sudo apt update` çalıştır; dağıtımının gerekli paketleri sağladığını kontrol et. Diğer Debian/Ubuntu tabanlı sistemler doğrulanmadı. Bağımlılıkları yok sayarak zorla kurma. |
 | `pear-setup: komut bulunamadı` | `.deb` kurulumu tamamlanmamış olabilir; `dpkg-query -W pear-desktop` ile kontrol et. Kaynak kurulumunda `bash install.sh` kullan. |
 | XFCE/X11 gerekli hatası | Başlangıçtaki ortam kontrolünü çalıştır; normal kullanıcının XFCE/X11 grafik oturumunu kullan. |

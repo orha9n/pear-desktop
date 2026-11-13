@@ -12,10 +12,11 @@ Download the .deb attachment from a published release:
 Open a terminal in the folder containing the downloaded .deb. Check its filename
 with ls. A GitHub source ZIP or tarball is not an installable package.
 
-Install with apt so dependencies are resolved:
+Install with apt so dependencies are resolved (run apt update first to avoid
+404 errors from superseded Ubuntu security packages):
 
     sudo apt update
-    sudo apt install ./pear-desktop_0.1.0~alpha1_all.deb
+    sudo apt install ./pear-desktop_0.1.0.alpha1_all.deb
 
 Log into Xfce using X11, then run as your regular desktop user:
 
