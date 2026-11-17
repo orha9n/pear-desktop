@@ -98,7 +98,9 @@ fi
 for t in MacTahoe-Folders MacTahoe-Folders-dark; do
   rm -rf "${HOME:?}/.local/share/icons/$t"
   mkdir -p "$HOME/.local/share/icons" && cp -r "$ROOT/assets/icons/$t" "$HOME/.local/share/icons/$t"
-  command -v gtk-update-icon-cache >/dev/null && gtk-update-icon-cache -q -f -t "$HOME/.local/share/icons/$t" || true
+  if command -v gtk-update-icon-cache >/dev/null; then
+    gtk-update-icon-cache -q -f -t "$HOME/.local/share/icons/$t" || true
+  fi
 done
 if [ ! -d "$HOME/.local/share/icons/WhiteSur-cursors" ]; then
   mkdir -p "$HOME/.local/share/icons"
