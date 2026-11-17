@@ -6,7 +6,6 @@
   python3 -m liquid.ctl status
   python3 -m liquid.ctl fullscreen            (etkin pencere tam ekran aç/kapat — ⌃⌘F)
   python3 -m liquid.ctl app quit|hide|hide-others|minimize   (⌘Q ⌘H ⌥⌘H ⌘M)
-  python3 -m liquid.ctl compositor [picom|xfwm]   (gerçek cam: picom; geri: xfwm)
   python3 -m liquid.ctl widgets edit           (Widget'ları Düzenle — masaüstü sağ tık menüsü)
 """
 import argparse
@@ -60,8 +59,6 @@ def main():
     app.add_argument("action", choices=("quit", "hide", "hide-others", "minimize"))
     widgets = commands.add_parser("widgets")
     widgets.add_argument("action", choices=("edit",))
-    comp = commands.add_parser("compositor")
-    comp.add_argument("mode", nargs="?", choices=("picom", "xfwm"))
     args = parser.parse_args()
     cmd = args.command or "status"
     if cmd == "toggle":
@@ -83,9 +80,6 @@ def main():
         app_action(args.action)
     elif cmd == "widgets":
         daemon.signal_component("widgets", signal.SIGUSR2)
-    elif cmd == "compositor":
-        from . import compositor
-        compositor.main([args.mode] if args.mode else [])
     elif cmd == "status":
         for name in ("session",) + COMPONENTS:
             pid = daemon.running(name)

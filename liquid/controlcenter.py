@@ -29,7 +29,6 @@ gi.require_version("Gdk", "3.0")
 gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, Gdk, GLib, Pango, PangoCairo  # noqa: E402
 
-from . import compositor  # noqa: E402
 from .wifi import vpns, set_vpn  # noqa: E402
 from .core import design, wallpaper, daemon, screen_geometry, restart_on_monitor_change  # noqa: E402
 from .core.i18n import t  # noqa: E402
@@ -187,7 +186,6 @@ class ControlCenter(Gtk.Window):
     def __init__(self):
         super().__init__(type=Gtk.WindowType.TOPLEVEL)
         self.set_title("Pear Control Center")
-        compositor.mark(self)
         self.set_decorated(False)
         self.set_skip_taskbar_hint(True)
         self.set_skip_pager_hint(True)
@@ -233,9 +231,7 @@ class ControlCenter(Gtk.Window):
         x = self.mx + self.mw - W - 10 - self.shadow
         y = self.my + design.BAR_H + 6 - self.shadow
         self.move(x, y)
-        # picom açıkken arkası gerçekten bulanıklaşır; kopya duvar kâğıdı gerekmez
-        self.backdrop = None if compositor.active() else \
-            wallpaper.region(self.mw, self.mh, x + self.shadow, y + self.shadow, W, self.H, blur=30)
+        self.backdrop = wallpaper.region(self.mw, self.mh, x + self.shadow, y + self.shadow, W, self.H, blur=30)
 
     def toggle(self):
         if self.get_visible():
@@ -331,11 +327,9 @@ class ControlCenter(Gtk.Window):
         cr.set_source_rgba(0, 0, 0, 0)
         cr.paint()
         cr.set_operator(cairo.OPERATOR_OVER)
-        real = compositor.active()
-        compositor.shape(self, self.shadow, self.shadow, W, self.H, 26)
         cr.translate(self.shadow, self.shadow)
-        design.liquid_glass(cr, 0, 0, W, self.H, 26, backdrop=None if real else self.backdrop,
-                            tint=design.glass_tint(0.48), dark=design.dark(), shadow=not real)
+        design.liquid_glass(cr, 0, 0, W, self.H, 26, backdrop=self.backdrop,
+                            tint=design.glass_tint(0.48), dark=design.dark(), shadow=True)
         if not design.dark():
             design.rrect(cr, 0.5, 0.5, W - 1, self.H - 1, 25.5)
             cr.set_source_rgba(0, 0, 0, 0.18)

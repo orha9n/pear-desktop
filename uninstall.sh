@@ -25,7 +25,7 @@ FAILED=0
 
 say "Pear kapatılıyor"
 rm -f "$HOME/.config/autostart/liquid.desktop"
-"$ROOT/bin/liquid" compositor xfwm >/dev/null 2>&1 || true     # picom → xfwm4 compositor (önceki değer)
+env PYTHONPATH="$ROOT" python3 -m liquid.legacy_picom >/dev/null 2>&1 || true   # eski sürümün picom'u → xfwm4
 "$ROOT/bin/liquid" stop >/dev/null 2>&1 || true
 sleep 1
 

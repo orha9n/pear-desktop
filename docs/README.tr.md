@@ -174,12 +174,10 @@ Proje klasöründe kullanılabilecek seçenekler:
 ```bash
 bash install.sh --help
 bash install.sh --no-apt
-LIQUID_NO_PICOM=1 bash install.sh
 ```
 
 `--no-apt`, bütün bağımlılıkların önceden kurulu olmasını ister; eksik varsa durur.
-Tema indirmeyi veya tema için sudo kullanımını kapatmaz. `LIQUID_NO_PICOM=1`,
-kurulum sırasında picom'un etkinleştirilmesini atlar.
+Tema indirmeyi veya tema için sudo kullanımını kapatmaz.
 
 ## Kullanım
 
@@ -195,9 +193,6 @@ pear toggle launcher
 pear toggle controlcenter
 pear widgets edit
 pear fullscreen
-pear compositor
-pear compositor xfwm
-pear compositor picom
 ```
 
 Kaynak kurulumunda aynı alt komutları proje klasöründeki `./bin/pear` ile kullan;
@@ -318,7 +313,6 @@ klasöründen `./bin/pear` kullan. Hiçbirini root olarak çalıştırma.
 | Tema indirme başarısız | İnternet/GitHub erişimini kontrol et ve kurulumu tekrar dene. Dış temalar `.deb` dosyasının içinde değil. |
 | Paket kuruldu ama görünüm değişmedi | `pear-setup` adımını tamamla; apt kurulumu tek başına ayarları uygulamaz. |
 | Global menüler yok | Oturumu kapatıp aç. Uygulamanın uyumlu menü dışa aktarması gerekir. |
-| Bulanıklıkta titreme veya boş görüntü | `pear compositor xfwm` ile XFCE compositor'üne dön ve günlükleri kontrol et. |
 | Eski paneli ve ayarları istiyorum | Paket kurulumunda `pear-reset`, kaynak kurulumunda `bash uninstall.sh` çalıştır. |
 
 Durumu ve son günlük satırlarını görmek için:
@@ -327,7 +321,6 @@ Durumu ve son günlük satırlarını görmek için:
 pear status
 tail -n 80 "$HOME/.cache/liquid/session.log"
 tail -n 80 "$HOME/.cache/liquid/bar.log"
-tail -n 80 "$HOME/.cache/liquid/picom.log"
 ```
 
 İlgili bileşen başlamadıysa günlük dosyası bulunmayabilir. Hata bildirirken komutu,
@@ -340,8 +333,11 @@ Arayüz birincil monitörde çalışır; ikinci monitöre ayrı çubuk/dock ekle
 değişimi bileşenleri yeniden başlatır. Global menüler uygulamanın dışa aktarma
 desteğine bağlıdır. Eski XEmbed tepsi simgeleri desteklenmez. Parlaklık, Bluetooth,
 pil tahmini ve medya donanım, servis ve izinlere bağlıdır. Flatpak/Snap Firefox
-profilleri otomatik bulunmaz. Tam ekran ve picom bulanıklığı farklı donanımlarda
-test edilmelidir; tekrarlayan picom hatalarında XFCE compositor'üne dönülür.
+profilleri otomatik bulunmaz. Tam ekran yerleşimi farklı donanımlarda test
+edilmelidir. Pear picom kullanmaz, XFCE'nin kendi xfwm4 compositor'üyle çalışır; cam
+yüzeyler arkadaki pencereleri değil, duvar kâğıdının bulanık halini gösterir. Eski
+sürümden güncellenince Pear'in açtığı picom durdurulur ve xfwm4 compositor'ü geri
+açılır; picom paketi sistemde kalır (gerekmiyorsa `sudo apt remove picom`).
 
 ## Geliştirme ve lisans
 

@@ -26,7 +26,7 @@ is still required. [Türkçe kurulum ve kullanım kılavuzu](docs/README.tr.md).
 - Control Center for audio, brightness, dark mode, Bluetooth, media and notifications.
 - Open System Reports from Control Center when Mint's `mintreport` is installed; Bluetooth and System Reports icons stay hidden in the menu bar.
 - macOS-style folder icons (`MacTahoe-Folders`, light and dark) on top of the MacTahoe icon theme; regenerate them with `python3 tools/folder_icons.py`.
-- Fullscreen window controls, optional picom blur and Turkish/English interface text.
+- Fullscreen window controls and Turkish/English interface text.
 
 ## Before installing
 
@@ -188,12 +188,10 @@ Source installer options, run from the checkout:
 ```bash
 bash install.sh --help
 bash install.sh --no-apt
-LIQUID_NO_PICOM=1 bash install.sh
 ```
 
 `--no-apt` requires every listed apt dependency to be installed already and stops
-if any is missing. It still downloads themes and can request sudo for them.
-`LIQUID_NO_PICOM=1` skips enabling picom during setup. See
+if any is missing. It still downloads themes and can request sudo for them. See
 [THIRD_PARTY.md](THIRD_PARTY.md) for pinned theme revisions and licenses.
 
 ## Usage
@@ -210,9 +208,6 @@ pear toggle launcher
 pear toggle controlcenter
 pear widgets edit
 pear fullscreen
-pear compositor
-pear compositor xfwm
-pear compositor picom
 ```
 
 For a source installation, run the same subcommands using `./bin/pear` from the
@@ -338,7 +333,6 @@ installs. Do not run either command as root.
 | GitHub theme fetch fails | Check network/GitHub access and retry setup. Package installation does not include the external themes. |
 | Pear is installed, but the desktop is unchanged | Complete `pear-setup`; apt installation alone does not apply settings. |
 | Global menus are missing | Log out and back in. Applications must export compatible menus; some use generic fallback menus. |
-| Blank/flickering blur or compositor problems | Run `pear compositor xfwm` to return to Xfce compositing, then check the logs. |
 | You want the original panel and settings back | Run `pear-reset` (or `bash uninstall.sh` for source) in your desktop session. |
 
 To inspect the current status and recent component logs:
@@ -347,7 +341,6 @@ To inspect the current status and recent component logs:
 pear status
 tail -n 80 "$HOME/.cache/liquid/session.log"
 tail -n 80 "$HOME/.cache/liquid/bar.log"
-tail -n 80 "$HOME/.cache/liquid/picom.log"
 ```
 
 A log may not exist if its component has not started. Include the failed command,
@@ -365,8 +358,11 @@ when opening an issue. Remove personal information from logs and screenshots.
   services and permissions. A music player/calendar application is not bundled.
 - Firefox integration detects default profiles in `~/.mozilla/firefox` or
   `~/.config/mozilla/firefox`; Flatpak/Snap profiles are not automatically found.
-- GPU blur and fullscreen placement need hardware testing. Repeated picom failures
-  trigger a fallback to xfwm4 compositing.
+- Pear uses Xfce's own xfwm4 compositor and does not use picom. Glass surfaces show
+  a blurred copy of the wallpaper, not the windows behind them. Updating from an
+  older version stops the picom it started and restores xfwm4 compositing; the picom
+  package itself is left installed (`sudo apt remove picom` if you don't need it).
+- Fullscreen placement needs hardware testing.
 
 ## Development
 

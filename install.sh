@@ -51,7 +51,7 @@ xfset() {   # kanal özellik tür değer [desen]
 say "1/7  Paketler"
 PKGS="python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-wnck-3.0 gir1.2-dbusmenu-glib-0.4 python3-pil
   x11-utils wmctrl xdotool playerctl brightnessctl pulseaudio-utils network-manager fonts-inter
-  appmenu-gtk2-module appmenu-gtk3-module appmenu-registrar sassc libxml2-utils git picom
+  appmenu-gtk2-module appmenu-gtk3-module appmenu-registrar sassc libxml2-utils git
   gir1.2-xapp-1.0 xapps-common python3-cairo x11-xserver-utils libnotify-bin
   xfce4-notifyd xfce4-screenshooter network-manager-gnome bluez rfkill xdg-utils xdg-user-dirs"
 MISSING=()
@@ -227,11 +227,6 @@ say "7/7  Başlatılıyor"
 sleep 1
 "$ROOT/bin/liquid" start
 sleep 4
-# gerçek cam: xfwm4 compositor'ü yerine picom (önceki değer ~/.config/liquid/compositor.json'da;
-# geri dönmek için: liquid compositor xfwm). İstemezsen: LIQUID_NO_PICOM=1 ./install.sh
-if [ "${LIQUID_NO_PICOM:-0}" != 1 ] && command -v picom >/dev/null; then
-  "$ROOT/bin/liquid" compositor picom || warn "picom başlamadı — xfwm4 compositor'ü kullanılıyor"
-fi
 "$ROOT/bin/liquid" status
 echo -e "\n\033[1;32m✓ Pear kuruldu.\033[0m  Global menüler için bir kez oturumu kapatıp aç."
 echo "  Geri almak için: ./uninstall.sh"

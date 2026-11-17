@@ -65,7 +65,7 @@ class DebianPackageTests(unittest.TestCase):
         result = subprocess.run([str(self.extracted / 'usr/share/pear/bin/pear'), '--help'],
                                 cwd=self.directory, env=env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn('compositor', result.stdout)
+        self.assertIn('fullscreen', result.stdout)
         self.assertFalse(Path(env['HOME']).exists())
 
     def test_menu_entry_is_valid(self):

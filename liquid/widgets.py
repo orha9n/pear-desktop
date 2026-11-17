@@ -350,9 +350,7 @@ BADGE_R = 10                                      # düzenleme modundaki "−" r
 def _card(win, keep_above=True):
     """Pear cam kart penceresi (DIALOG, kenarsız, saydam köşeli)."""
     from .applemenu import install_css, _card_bg
-    from . import compositor
     win.set_name("lcard")
-    compositor.mark(win)
     win.set_decorated(False)
     win.set_resizable(False)
     win.set_skip_taskbar_hint(True)

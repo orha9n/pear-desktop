@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 import cairo
 
-from liquid import ctl, desktopmenu, firefox
+from liquid import ctl, desktopmenu, firefox, legacy_picom
 from liquid.core import daemon, i18n
 from liquid.core.power import estimate_text
 from liquid.spotlight import calc, scan_files
@@ -192,6 +192,51 @@ class DesktopMenuTests(unittest.TestCase):
                 self.assertIn("'/tmp/a project/bin/liquid'", uca.read_text())
                 desktopmenu.remove()
                 self.assertEqual(uca.read_text(), original)
+
+
+class LegacyPicomTests(unittest.TestCase):
+    """Eski sürümün picom kurulumu geri alınır; gerçek süreçlere ve xfconf'a dokunulmaz."""
+
+    def setUp(self):
+        self.home = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.home)
+        self.state = self.home / "compositor.json"
+        self.autostart = self.home / "picom.desktop"
+        self.calls = []
+        self.system = self.home / "system-picom.desktop"
+        for target, value in (("STATE", str(self.state)), ("AUTOSTART", str(self.autostart)),
+                              ("SYSTEM_AUTOSTART", str(self.system))):
+            p = patch.object(legacy_picom, target, value)
+            p.start()
+            self.addCleanup(p.stop)
+        for target, fake in (("_stop_picom", lambda: False),
+                             ("_set_xfwm_compositing", self.calls.append)):
+            p = patch.object(legacy_picom, target, fake)
+            p.start()
+            self.addCleanup(p.stop)
+
+    def test_no_traces_is_a_noop(self):
+        self.assertFalse(legacy_picom.cleanup(lambda m: None))
+        self.assertEqual(self.calls, [])
+
+    def test_restores_previous_xfwm_value_and_our_autostart(self):
+        self.state.write_text('{"mode": "picom", "xfwm_compositing": "true"}')
+        self.autostart.write_text("[Desktop Entry]\nHidden=true\nX-Liquid=true\n")
+        self.assertTrue(legacy_picom.cleanup(lambda m: None))
+        self.assertEqual(self.calls, ["true"])
+        self.assertFalse(self.state.exists())
+        self.assertFalse(self.autostart.exists())
+
+    def test_hide_file_stays_while_picom_package_is_installed(self):
+        self.system.write_text("[Desktop Entry]\n")
+        self.autostart.write_text("[Desktop Entry]\nHidden=true\nX-Liquid=true\n")
+        legacy_picom.cleanup(lambda m: None)
+        self.assertTrue(self.autostart.exists())
+
+    def test_user_autostart_file_is_kept(self):
+        self.autostart.write_text("[Desktop Entry]\nHidden=true\n")
+        legacy_picom.cleanup(lambda m: None)
+        self.assertTrue(self.autostart.exists())
 
 
 class UninstallRecoveryTests(unittest.TestCase):

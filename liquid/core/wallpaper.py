@@ -2,7 +2,7 @@
 """Pear — duvar kâğıdı: xfdesktop'un kullandığı resim, ekrana yerleştirme ve bulanık bölgeler.
 
 Cam yüzeyler (dock, widget'lar, Uygulamalar ekranı) arkadaki duvar kâğıdının bulanık halini
-çizer; compositor blur'u (picom) gerekmez. Sonuçlar önbellekte tutulur.
+çizer; compositor blur'u gerekmez. Sonuçlar önbellekte tutulur.
 """
 import os
 import subprocess

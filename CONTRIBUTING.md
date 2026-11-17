@@ -36,7 +36,7 @@ Before a release, use a fresh Linux Mint Xfce VM and verify:
 1. Installation, logout/login, autostart and `bin/liquid status`.
 2. Menu exports and fallback menus; application launch, close and dock pinning.
 3. Search, calculations, widgets, notification history and Control Center.
-4. Fullscreen entry/exit, dark mode and picom/xfwm switching.
+4. Fullscreen entry/exit and dark mode.
 5. A second installation preserves the original recovery values.
 6. Uninstall restores the original desktop and preserves later user changes.
 7. Clone paths with spaces and monitor hotplug; record any hardware limitations.
@@ -46,7 +46,7 @@ uninstall in CI against a developer's real session.
 
 ## Issues and pull requests
 
-For bugs, include your Mint/Xfce versions, Python and picom versions, X11 session,
+For bugs, include your Mint/Xfce versions, Python version, X11 session,
 reproduction steps and relevant logs from `~/.cache/liquid/`. Review logs and
 screenshots for personal information before attaching them. Do not attach browser
 profiles, recovery files, credentials or complete home-directory dumps.
