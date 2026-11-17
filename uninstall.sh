@@ -94,6 +94,7 @@ echo "   ✓ panel"
 if [ "$REMOVE_THEMES" = 1 ]; then
   rm -rf "$HOME/.local/share/icons/MacTahoe" "$HOME/.local/share/icons/MacTahoe-light" \
          "$HOME/.local/share/icons/MacTahoe-dark" "$HOME/.local/share/icons/WhiteSur-cursors" \
+         "$HOME/.local/share/icons/MacTahoe-Folders" "$HOME/.local/share/icons/MacTahoe-Folders-dark" \
          "$HOME/.local/share/backgrounds/liquid"
   sudo rm -f /usr/share/xfce4/backdrops/liquid-golden-gate.jpg
   echo "   ✓ kullanıcı temaları silindi (sistem teması için: sudo rm -rf /usr/share/themes/MacTahoe-*)"

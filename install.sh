@@ -94,6 +94,12 @@ fi
 if [ ! -d "$HOME/.local/share/icons/MacTahoe" ] && [ ! -d /usr/share/icons/MacTahoe ]; then
   clone MacTahoe-icon-theme && (cd "$TMP/MacTahoe-icon-theme" && ./install.sh -d "$HOME/.local/share/icons")
 fi
+# Pear'in macOS tarzı klasörleri (depoda; MacTahoe / MacTahoe-dark'tan devralır). Güncellemede yenilenir.
+for t in MacTahoe-Folders MacTahoe-Folders-dark; do
+  rm -rf "${HOME:?}/.local/share/icons/$t"
+  mkdir -p "$HOME/.local/share/icons" && cp -r "$ROOT/assets/icons/$t" "$HOME/.local/share/icons/$t"
+  command -v gtk-update-icon-cache >/dev/null && gtk-update-icon-cache -q -f -t "$HOME/.local/share/icons/$t" || true
+done
 if [ ! -d "$HOME/.local/share/icons/WhiteSur-cursors" ]; then
   mkdir -p "$HOME/.local/share/icons"
   clone WhiteSur-cursors && cp -r "$TMP/WhiteSur-cursors/dist" "$HOME/.local/share/icons/WhiteSur-cursors"
@@ -117,12 +123,12 @@ if [ ! -f "$G4/.liquid" ]; then
   cp -r "$SRC/assets/gtk/windows-assets/titlebutton" "$G4/windows-assets"
   touch "$G4/.liquid"
 fi
-ok "MacTahoe-Light · MacTahoe ikonları · WhiteSur imleçleri · GTK4 (~/.config/gtk-4.0)"
+ok "MacTahoe-Light · MacTahoe ikonları + klasörler · WhiteSur imleçleri · GTK4 (~/.config/gtk-4.0)"
 
 # ---------- 3) görünüm ayarları ----------
 say "3/7  Pencere teması, ikonlar, yazı tipi"
 xfset xsettings /Net/ThemeName string MacTahoe-Light "MacTahoe-*"      # Karanlık Mod: MacTahoe-Dark
-xfset xsettings /Net/IconThemeName string MacTahoe "MacTahoe*"
+xfset xsettings /Net/IconThemeName string MacTahoe-Folders "MacTahoe*"
 xfset xsettings /Gtk/CursorThemeName string WhiteSur-cursors
 xfset xsettings /Gtk/CursorThemeSize int 24
 xfset xsettings /Gtk/FontName string "Inter 10"

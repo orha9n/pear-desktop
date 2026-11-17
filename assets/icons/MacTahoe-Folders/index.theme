@@ -1,0 +1,12 @@
+[Icon Theme]
+Name=MacTahoe-Folders
+Comment=Pear: macOS-style folders on top of MacTahoe
+Inherits=MacTahoe,hicolor
+Directories=places/scalable
+
+[places/scalable]
+Context=Places
+Size=256
+MinSize=16
+MaxSize=512
+Type=Scalable

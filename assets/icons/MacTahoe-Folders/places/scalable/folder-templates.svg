@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><defs>
+  <linearGradient id="back" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#4CA8EE"/><stop offset="1" stop-color="#2F8FE0"/>
+  </linearGradient>
+  <linearGradient id="front" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#86CDFB"/><stop offset="1" stop-color="#5BB4F5"/>
+  </linearGradient>
+  <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E9F1F8"/>
+  </linearGradient>
+  <filter id="sh" x="-10%" y="-10%" width="120%" height="130%">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+    <feOffset dy="3"/>
+    <feComponentTransfer><feFuncA type="linear" slope="0.28"/></feComponentTransfer>
+    <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+</defs><g filter="url(#sh)"><path fill="url(#back)" d="M38 40h50c6 0 9 2 12 6l6 8c3 4 6 6 12 6h100c10 0 18 8 18 18v116c0 10-8 18-18 18H38c-10 0-18-8-18-18V58c0-10 8-18 18-18z"/><rect x="32" y="70" width="192" height="100" rx="8" fill="url(#paper)"/><rect x="20" y="82" width="216" height="134" rx="16" fill="url(#front)"/><path d="M36 82.8h184c8 0 14.6 6 15.6 13.6" fill="none" stroke="#B9E3FE" stroke-width="1.6" stroke-linecap="round"/><path d="M20.4 96.4C21.4 88.8 28 82.8 36 82.8" fill="none" stroke="#B9E3FE" stroke-width="1.6" stroke-linecap="round"/><g fill="#2C86D3"><rect x="102" y="124" width="22" height="22" rx="4"/><rect x="132" y="124" width="22" height="22" rx="4"/><rect x="102" y="152" width="22" height="22" rx="4"/><rect x="132" y="152" width="22" height="22" rx="4"/></g></g></svg>

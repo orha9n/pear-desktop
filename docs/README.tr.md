@@ -117,7 +117,8 @@ pear-setup
 ```
 
 Uygulama menüsündeki **Pear Kurulumu** da aynı işlemi yapar. Betik MacTahoe tema
-ve ikonlarını, WhiteSur imleçlerini indirir; ayarları uygular, otomatik başlatmayı
+ve ikonlarını, WhiteSur imleçlerini indirir; depodaki macOS tarzı klasör simgelerini
+(`MacTahoe-Folders`) kurar; ayarları uygular, otomatik başlatmayı
 ekler ve Pear'i açar. Sistem teması ve duvar kâğıdı için sudo isteyebilir. İşlem
 bitene kadar internet bağlantısını açık tut.
 

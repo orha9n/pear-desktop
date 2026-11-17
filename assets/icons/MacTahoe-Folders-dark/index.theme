@@ -1,0 +1,12 @@
+[Icon Theme]
+Name=MacTahoe-Folders-dark
+Comment=Pear: macOS-style folders on top of MacTahoe-dark
+Inherits=MacTahoe-dark,hicolor
+Directories=places/scalable
+
+[places/scalable]
+Context=Places
+Size=256
+MinSize=16
+MaxSize=512
+Type=Scalable

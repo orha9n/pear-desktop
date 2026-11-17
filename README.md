@@ -25,6 +25,7 @@ is still required. [Türkçe kurulum ve kullanım kılavuzu](docs/README.tr.md).
 - Application launcher; search for applications and local file names; calculator and web search.
 - Control Center for audio, brightness, dark mode, Bluetooth, media and notifications.
 - Open System Reports from Control Center when Mint's `mintreport` is installed; Bluetooth and System Reports icons stay hidden in the menu bar.
+- macOS-style folder icons (`MacTahoe-Folders`, light and dark) on top of the MacTahoe icon theme; regenerate them with `python3 tools/folder_icons.py`.
 - Fullscreen window controls, optional picom blur and Turkish/English interface text.
 
 ## Before installing

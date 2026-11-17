@@ -108,7 +108,7 @@ def set_dark(on):
     _gtk4_dark(on)
     run_bg(["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName", "-s", "MacTahoe-Dark" if on else "MacTahoe-Light"])
     run_bg(["xfconf-query", "-c", "xfwm4", "-p", "/general/theme", "-s", "MacTahoe-Dark" if on else "MacTahoe-Light"])
-    run_bg(["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName", "-s", "MacTahoe-dark" if on else "MacTahoe"])
+    run_bg(["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName", "-s", "MacTahoe-Folders-dark" if on else "MacTahoe-Folders"])
 
 
 def backlight():
